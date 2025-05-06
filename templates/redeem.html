@@ -1,24 +1,94 @@
 {% extends "admin.html" %} {% block page_title %}Redemptions{% endblock %} {%
 block content %}
+<style>
+  /* Reuse the same styles from transactions */
+  .search-container {
+    position: relative;
+    flex: 1;
+  }
+  .suggestions-box {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 4px 4px;
+    display: none;
+  }
+  .suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+  }
+  .suggestion-item:hover {
+    background-color: #f5f5f5;
+  }
+  .customer-info {
+    display: flex;
+    justify-content: space-between;
+  }
+  .customer-name {
+    font-weight: 600;
+  }
+  .customer-points {
+    color: #27ae60;
+    font-weight: 500;
+  }
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .form-control {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .btn {
+    padding: 0.75rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background-color: #2980b9;
+  }
+</style>
+
 <h3>Redeem Points</h3>
 <form method="post" action="/redeem">
   <div class="form-row">
-    <select name="customer_id" class="form-control" required>
-      <option value="">Select Customer</option>
-      {% for customer in customers %}
-      <option value="{{ customer[0] }}" data-points="{{ customer[2] }}">
-        {{ customer[1] }} (ID: {{ customer[0] }}, Points: {{ customer[2] }})
-      </option>
-      {% endfor %}
-    </select>
+    <div class="search-container">
+      <input
+        type="text"
+        id="customer-search"
+        class="form-control"
+        placeholder="Search customer (name or ID)"
+        autocomplete="off"
+        required
+      />
+      <input type="hidden" name="customer_id" id="customer-id" required />
+      <div id="customer-suggestions" class="suggestions-box"></div>
+    </div>
+
     <select name="reward_id" class="form-control" required>
       <option value="">Select Reward</option>
       {% for reward in rewards %}
-      <option value="{{ reward[0] }}" data-points="{{ reward[2] }}">
+      <option value="{{ reward[0] }}">
         {{ reward[1] }} ({{ reward[2] }} points)
       </option>
       {% endfor %}
     </select>
+
     <button type="submit" class="btn">Redeem</button>
   </div>
 </form>
@@ -28,8 +98,7 @@ block content %}
   <thead>
     <tr>
       <th>DATE</th>
-      <th>CUSTOMER ID</th>
-      <th>CUSTOMER NAME</th>
+      <th>CUSTOMER</th>
       <th>REWARD</th>
       <th>POINTS</th>
     </tr>
@@ -38,12 +107,65 @@ block content %}
     {% for r in redemptions %}
     <tr>
       <td>{{ r[0] }}</td>
-      <td>{{ r[1] }}</td>
-      <td>{{ r[4] }}</td>
+      <td>{{ r[4] }} (CUST-{{ r[1] }})</td>
       <td>{{ r[2] }}</td>
       <td>{{ r[3] }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<script>
+  // Customer Search Functionality
+  document
+    .getElementById("customer-search")
+    .addEventListener("input", function () {
+      const query = this.value.trim();
+      const suggestionsBox = document.getElementById("customer-suggestions");
+
+      if (query.length < 1) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+
+      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+        .then((response) => response.json())
+        .then((customers) => {
+          suggestionsBox.innerHTML = "";
+
+          if (customers.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
+
+          customers.forEach((customer) => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.innerHTML = `
+                    <div class="customer-info">
+                        <span class="customer-name">${customer.name} (CUST-${customer.id})</span>
+                        <span class="customer-points">${customer.points} pts</span>
+                    </div>
+                `;
+            div.addEventListener("click", () => {
+              document.getElementById(
+                "customer-search"
+              ).value = `${customer.name} (CUST-${customer.id})`;
+              document.getElementById("customer-id").value = customer.id;
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(div);
+          });
+
+          suggestionsBox.style.display = "block";
+        });
+    });
+
+  // Hide suggestions when clicking elsewhere
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".search-container")) {
+      document.getElementById("customer-suggestions").style.display = "none";
+    }
+  });
+</script>
 {% endblock %}
