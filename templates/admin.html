@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Fuel Reward System - Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Fuel Reward System</h1>
+        <a href="/logout" class="btn">Logout</a>
+      </div>
+
+      <h2>{% block page_title %}Dashboard{% endblock %}</h2>
+
+      <div class="stats-container">
+        <div class="stat-card">
+          <h3>Total Transactions</h3>
+          <p>{{ total_transactions }}</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Sales</h3>
+          <p>₱{{ "%.2f"|format(total_sales) }}</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Customers</h3>
+          <p>{{ total_customers }}</p>
+        </div>
+      </div>
+
+      <div class="nav-tabs">
+        <a
+          href="/dashboard"
+          class="nav-tab {% if request.path == '/dashboard' %}active{% endif %}"
+          >Dashboard</a
+        >
+        <a
+          href="/transactions"
+          class="nav-tab {% if request.path == '/transactions' %}active{% endif %}"
+          >Transactions</a
+        >
+        <a
+          href="/customers"
+          class="nav-tab {% if request.path == '/customers' %}active{% endif %}"
+          >Customers</a
+        >
+        <a
+          href="/redeem"
+          class="nav-tab {% if request.path == '/redeem' %}active{% endif %}"
+          >Redemptions</a
+        >
+        <a
+          href="/points"
+          class="nav-tab {% if request.path == '/points' %}active{% endif %}"
+          >Points Management</a
+        >
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <div class="table-container">
+        {% block content %}
+        <h3>Recent Activity</h3>
+        <p>
+          Welcome to the Fuel Reward System admin dashboard. Select a tab above
+          to manage different aspects of the system.
+        </p>
+        {% endblock %}
+      </div>
+    </div>
+  </body>
+</html>

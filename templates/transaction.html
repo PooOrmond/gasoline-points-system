@@ -1,0 +1,305 @@
+{% extends "admin.html" %} {% block content %}
+<style>
+  /* Form and Button Styles */
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .form-control {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .btn {
+    padding: 0.75rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background-color: #2980b9;
+  }
+  .btn-edit {
+    background-color: #f39c12;
+  }
+  .btn-edit:hover {
+    background-color: #e67e22;
+  }
+  .btn-confirm {
+    background-color: #27ae60;
+    display: none;
+  }
+  .btn-confirm:hover {
+    background-color: #219653;
+  }
+
+  /* Customer Search Styles */
+  .search-container {
+    position: relative;
+    flex: 1;
+  }
+  .suggestions-box {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 4px 4px;
+    display: none;
+  }
+  .suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+  }
+  .suggestion-item:hover {
+    background-color: #f5f5f5;
+  }
+  .customer-info {
+    display: flex;
+    justify-content: space-between;
+  }
+  .customer-name {
+    font-weight: 600;
+  }
+  .customer-points {
+    color: #27ae60;
+    font-weight: 500;
+  }
+
+  /* Table Styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th,
+  td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+  }
+  .edit-input {
+    width: 80px;
+    padding: 5px;
+    border: 1px solid #3498db;
+    border-radius: 3px;
+  }
+</style>
+
+<form method="post" action="/transactions">
+  <div class="form-row">
+    <select name="fuel_type" class="form-control" required>
+      <option value="">Fuel Type</option>
+      <option value="Regular">Regular Gasoline</option>
+      <option value="Premium">Premium Gasoline</option>
+      <option value="Diesel">Diesel</option>
+    </select>
+
+    <input
+      type="number"
+      step="0.01"
+      name="amount"
+      placeholder="Amount (₱)"
+      required
+      class="form-control"
+    />
+
+    <div class="search-container">
+      <input
+        type="text"
+        id="customer-search"
+        class="form-control"
+        placeholder="Search customer (name or ID)"
+        autocomplete="off"
+        required
+      />
+      <input type="hidden" name="customer_id" id="customer-id" />
+      <div id="customer-suggestions" class="suggestions-box"></div>
+    </div>
+
+    <button type="submit" class="btn">Record Transaction</button>
+  </div>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>CUSTOMER</th>
+      <th>DATE</th>
+      <th>FUEL TYPE</th>
+      <th>AMOUNT</th>
+      <th>POINTS</th>
+      <th>ACTIONS</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tx in transactions %}
+    <tr data-id="{{ tx[0] }}">
+      <td>
+        {% if tx[7] %} {{ tx[7] }} (CUST-{{ tx[6] }}) {% else %} - {% endif %}
+      </td>
+      <td>{{ tx[5] }}</td>
+      <td>{{ tx[2] }}</td>
+      <td class="amount-cell">
+        ₱<span class="amount-value">{{ "%.2f"|format(tx[3]) }}</span>
+        <input
+          type="number"
+          step="0.01"
+          value="{{ tx[3] }}"
+          class="edit-input"
+          style="display: none"
+        />
+      </td>
+      <td class="points-cell">{{ tx[4] }}</td>
+      <td>
+        <button class="btn btn-edit" onclick="toggleEditMode(this)">
+          Edit
+        </button>
+        <button class="btn btn-confirm" onclick="updateTransaction(this)">
+          Confirm
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+  // Customer Search Functionality
+  document
+    .getElementById("customer-search")
+    .addEventListener("input", function () {
+      const query = this.value.trim();
+      const suggestionsBox = document.getElementById("customer-suggestions");
+
+      if (query.length < 1) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+
+      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+        .then((response) => response.json())
+        .then((customers) => {
+          suggestionsBox.innerHTML = "";
+
+          if (customers.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
+
+          customers.forEach((customer) => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.innerHTML = `
+                    <div class="customer-info">
+                        <span class="customer-name">${customer.name} (CUST-${customer.id})</span>
+                        <span class="customer-points">${customer.points} pts</span>
+                    </div>
+                `;
+            div.addEventListener("click", () => {
+              document.getElementById(
+                "customer-search"
+              ).value = `${customer.name} (CUST-${customer.id})`;
+              document.getElementById("customer-id").value = customer.id;
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(div);
+          });
+
+          suggestionsBox.style.display = "block";
+        });
+    });
+
+  // Hide suggestions when clicking elsewhere
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".search-container")) {
+      document.getElementById("customer-suggestions").style.display = "none";
+    }
+  });
+
+  // Transaction Edit Functionality
+  function toggleEditMode(button) {
+    const row = button.closest("tr");
+    const editBtn = row.querySelector(".btn-edit");
+    const confirmBtn = row.querySelector(".btn-confirm");
+    const amountValue = row.querySelector(".amount-value");
+    const amountInput = row.querySelector(".edit-input");
+
+    if (editBtn.textContent === "Edit") {
+      // Enter edit mode
+      editBtn.textContent = "Cancel";
+      amountValue.style.display = "none";
+      amountInput.style.display = "inline";
+      amountInput.focus();
+      confirmBtn.style.display = "inline-block";
+    } else {
+      // Cancel edit mode
+      editBtn.textContent = "Edit";
+      amountValue.style.display = "inline";
+      amountInput.style.display = "none";
+      confirmBtn.style.display = "none";
+    }
+  }
+
+  function updateTransaction(button) {
+    const row = button.closest("tr");
+    const transactionId = row.dataset.id;
+    const amountInput = row.querySelector(".edit-input");
+    const newAmount = parseFloat(amountInput.value);
+
+    if (isNaN(newAmount) || newAmount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    fetch("/update-transaction", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `id=${transactionId}&amount=${newAmount}`,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Update display
+          row.querySelector(".amount-value").textContent = newAmount.toFixed(2);
+          row.querySelector(".points-cell").textContent = data.new_points;
+
+          // Exit edit mode
+          toggleEditMode(row.querySelector(".btn-edit"));
+
+          // Show success message
+          showFlashMessage("Transaction updated successfully!", "success");
+        } else {
+          showFlashMessage("Error: " + data.error, "error");
+        }
+      });
+  }
+
+  function showFlashMessage(message, type) {
+    const flashDiv = document.createElement("div");
+    flashDiv.className = `flash ${type}`;
+    flashDiv.textContent = message;
+    document.querySelector(".table-container").prepend(flashDiv);
+    setTimeout(() => flashDiv.remove(), 3000);
+  }
+</script>
+{% endblock %}

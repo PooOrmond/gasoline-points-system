@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: gasoline-points-system
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        syncValue: true # You'll set this manually in Render dashboard
+      - key: DB_HOST
+        fromDatabase:
+          name: gasoline_db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: gasoline_db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: gasoline_db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: gasoline_db
+          property: password
+    env: python
+    pythonVersion: "3.13.2" # Specify your Python version

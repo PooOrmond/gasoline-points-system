@@ -1,0 +1,49 @@
+{% extends "admin.html" %} {% block page_title %}Points Management{% endblock %}
+{% block content %}
+<h3>Add New Reward</h3>
+<form method="post" action="/add_reward">
+  <div class="form-row">
+    <input
+      type="text"
+      name="name"
+      class="form-control"
+      placeholder="Reward Name"
+      required
+    />
+    <input
+      type="number"
+      name="points_required"
+      class="form-control"
+      placeholder="Points Required"
+      required
+    />
+    <button type="submit" class="btn">Add</button>
+  </div>
+</form>
+
+<h3>Reward Management</h3>
+<table>
+  <thead>
+    <tr>
+      <th>REWARD NAME</th>
+      <th>POINTS REQUIRED</th>
+      <th>STATUS</th>
+      <th>ACTIONS</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for reward in rewards %}
+    <tr>
+      <td>{{ reward[1] }}</td>
+      <td>{{ reward[2] }}</td>
+      <td>{{ reward[3] }}</td>
+      <td>
+        <a href="/toggle_reward/{{ reward[0] }}" class="action-btn">
+          {{ 'Disable' if reward[3] == 'Active' else 'Enable' }}
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

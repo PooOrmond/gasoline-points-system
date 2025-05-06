@@ -1,0 +1,43 @@
+<!-- customer.html -->
+{% extends "admin.html" %} {% block content %}
+<h3>Customer Registration</h3>
+<form method="post" action="/customers">
+  <button type="submit" class="btn">Generate New Customer Ticket</button>
+</form>
+
+<!-- Add search functionality -->
+<form method="get" action="/customers" class="search-form">
+  <input
+    type="text"
+    name="search"
+    placeholder="Search by ID or name"
+    class="form-control"
+  />
+  <button type="submit" class="btn">Search</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>NAME</th>
+      <th>REGISTERED ON</th>
+      <th>POINTS BALANCE</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for customer in customers %}
+    <tr>
+      <td>{{ customer[0] }}</td>
+      <!-- ID -->
+      <td>{{ customer[1] }}</td>
+      <!-- Name -->
+      <td>{{ customer[2] }}</td>
+      <!-- Registration date -->
+      <td>{{ customer[3] }}</td>
+      <!-- Total points -->
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

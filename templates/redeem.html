@@ -1,0 +1,49 @@
+{% extends "admin.html" %} {% block page_title %}Redemptions{% endblock %} {%
+block content %}
+<h3>Redeem Points</h3>
+<form method="post" action="/redeem">
+  <div class="form-row">
+    <select name="customer_id" class="form-control" required>
+      <option value="">Select Customer</option>
+      {% for customer in customers %}
+      <option value="{{ customer[0] }}" data-points="{{ customer[2] }}">
+        {{ customer[1] }} (ID: {{ customer[0] }}, Points: {{ customer[2] }})
+      </option>
+      {% endfor %}
+    </select>
+    <select name="reward_id" class="form-control" required>
+      <option value="">Select Reward</option>
+      {% for reward in rewards %}
+      <option value="{{ reward[0] }}" data-points="{{ reward[2] }}">
+        {{ reward[1] }} ({{ reward[2] }} points)
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn">Redeem</button>
+  </div>
+</form>
+
+<h3>Redemption History</h3>
+<table>
+  <thead>
+    <tr>
+      <th>DATE</th>
+      <th>CUSTOMER ID</th>
+      <th>CUSTOMER NAME</th>
+      <th>REWARD</th>
+      <th>POINTS</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in redemptions %}
+    <tr>
+      <td>{{ r[0] }}</td>
+      <td>{{ r[1] }}</td>
+      <td>{{ r[4] }}</td>
+      <td>{{ r[2] }}</td>
+      <td>{{ r[3] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
