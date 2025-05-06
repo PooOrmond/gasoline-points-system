@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# SQLite database file
+*.db
+
+# Flask secret keys or instance configs (if any)
+instance/
+.env
+
+# VSCode and system files
+.vscode/
+.DS_Store
+
+# Python egg files
+*.egg-info/
+*.egg
+
+# Backup files
+*.bak
+*.swp
+*.swo
