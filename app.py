@@ -165,7 +165,7 @@ def transactions():
         
         # Calculate points as 1% of amount (₱100 = 1.00 point)
         points_earned = round(amount * 0.01, 2)
-        date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
         transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y%m%d%H%M%S')}"
         
         try:
