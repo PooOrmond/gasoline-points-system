@@ -147,9 +147,12 @@ block content %}
                       <span class="customer-name">${customer.name} (CUST-${
               customer.id
             })</span>
-                      <span class="customer-points">${formatNumber(
+                      <span class="customer-points">${parseFloat(
                         customer.points
-                      )} pts</span>
+                      )
+                        .toFixed(2)
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} pts</span>
+
                   </div>
               `;
             div.addEventListener("click", () => {

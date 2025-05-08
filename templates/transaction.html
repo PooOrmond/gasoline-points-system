@@ -208,8 +208,12 @@
             div.className = "suggestion-item";
             div.innerHTML = `
                     <div class="customer-info">
-                        <span class="customer-name">${customer.name} (CUST-${customer.id})</span>
-                        <span class="customer-points">${customer.points} pts</span>
+                        <span class="customer-name">${customer.name} (CUST-${
+              customer.id
+            })</span>
+                        <span class="customer-points">${customer.points.toFixed(
+                          2
+                        )} pts</span>
                     </div>
                 `;
             div.addEventListener("click", () => {
