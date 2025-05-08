@@ -36,7 +36,136 @@
           />
         </div>
         <button type="submit" class="btn">Sign In</button>
+        <div style="text-align: center; margin-top: 1rem">
+          <a
+            href="#"
+            id="forgot-password"
+            style="color: #3498db; text-decoration: none"
+            >Forgot Password?</a
+          >
+        </div>
       </form>
     </div>
+
+    <!-- Forgot Password Modal -->
+    <div
+      id="forgot-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          width: 350px;
+        "
+      >
+        <h2>Reset Password</h2>
+        <form id="reset-form">
+          <div class="form-group">
+            <label for="reset-username">Username</label>
+            <input
+              type="text"
+              id="reset-username"
+              name="username"
+              placeholder="Enter your username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-password">New Password</label>
+            <input
+              type="password"
+              id="new-password"
+              name="new_password"
+              placeholder="Enter new password"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="confirm-password">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-password"
+              name="confirm_password"
+              placeholder="Confirm new password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn">Reset Password</button>
+          <button
+            type="button"
+            id="cancel-reset"
+            class="btn"
+            style="background-color: #95a5a6; margin-top: 0.5rem"
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("forgot-password")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          document.getElementById("forgot-modal").style.display = "flex";
+        });
+
+      document
+        .getElementById("cancel-reset")
+        .addEventListener("click", function () {
+          document.getElementById("forgot-modal").style.display = "none";
+        });
+
+      document
+        .getElementById("reset-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const username = document.getElementById("reset-username").value;
+          const newPassword = document.getElementById("new-password").value;
+          const confirmPassword =
+            document.getElementById("confirm-password").value;
+
+          if (newPassword !== confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+          }
+
+          fetch("/reset-password", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username,
+              new_password: newPassword,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Password reset successfully!");
+                document.getElementById("forgot-modal").style.display = "none";
+              } else {
+                alert("Error: " + data.message);
+              }
+            })
+            .catch((error) => {
+              alert("An error occurred: " + error);
+            });
+        });
+    </script>
   </body>
 </html>

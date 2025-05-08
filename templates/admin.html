@@ -6,9 +6,66 @@
   </head>
   <body>
     <div class="dashboard-container">
+      <!-- Logout Confirmation Modal -->
+      <div id="logout-modal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Confirm Logout</h3>
+            <button class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-actions">
+              <button id="confirm-logout" class="btn btn-danger">Logout</button>
+              <button id="cancel-logout" class="btn btn-secondary">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="dashboard-header">
         <h1>Fuel Reward System</h1>
-        <a href="/logout" class="btn">Logout</a>
+        <div class="profile-section">
+          <button id="profile-btn" class="btn">Profile</button>
+          <div id="profile-dropdown">
+            <h3>Edit Profile</h3>
+            <form id="profile-form">
+              <div class="form-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  id="profile-username"
+                  class="form-control"
+                  value="{{ ADMIN_CREDENTIALS.username }}"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  id="current-password"
+                  class="form-control"
+                  placeholder="Enter current password"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  id="profile-new-password"
+                  class="form-control"
+                  placeholder="Leave blank to keep current"
+                />
+              </div>
+              <button type="submit" class="btn">Save Changes</button>
+            </form>
+          </div>
+          <button id="logout-btn" class="btn btn-logout">Logout</button>
+        </div>
       </div>
 
       <h2>{% block page_title %}Dashboard{% endblock %}</h2>
@@ -20,7 +77,7 @@
         </div>
         <div class="stat-card">
           <h3>Total Sales</h3>
-          <p>₱{{ "%.2f"|format(total_sales) }}</p>
+          <p>₱{{ total_sales }}</p>
         </div>
         <div class="stat-card">
           <h3>Total Customers</h3>
@@ -49,11 +106,6 @@
           class="nav-tab {% if request.path == '/redeem' %}active{% endif %}"
           >Redemptions</a
         >
-        <a
-          href="/points"
-          class="nav-tab {% if request.path == '/points' %}active{% endif %}"
-          >Points Management</a
-        >
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
@@ -71,5 +123,107 @@
         {% endblock %}
       </div>
     </div>
+
+    <script>
+      // Logout Confirmation
+      const logoutBtn = document.getElementById("logout-btn");
+      const logoutModal = document.getElementById("logout-modal");
+      const confirmLogout = document.getElementById("confirm-logout");
+      const cancelLogout = document.getElementById("cancel-logout");
+      const modalClose = document.querySelector(".modal-close");
+
+      logoutBtn.addEventListener("click", () => {
+        logoutModal.classList.add("active");
+      });
+
+      confirmLogout.addEventListener("click", () => {
+        window.location.href = "/logout";
+      });
+
+      cancelLogout.addEventListener("click", () => {
+        logoutModal.classList.remove("active");
+      });
+
+      modalClose.addEventListener("click", () => {
+        logoutModal.classList.remove("active");
+      });
+
+      window.addEventListener("click", (e) => {
+        if (e.target === logoutModal) {
+          logoutModal.classList.remove("active");
+        }
+      });
+
+      // Profile Dropdown
+      document
+        .getElementById("profile-btn")
+        .addEventListener("click", function () {
+          const dropdown = document.getElementById("profile-dropdown");
+          dropdown.style.display =
+            dropdown.style.display === "none" ? "block" : "none";
+        });
+
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".profile-section")) {
+          document.getElementById("profile-dropdown").style.display = "none";
+        }
+      });
+
+      // Profile Form Submission
+      document
+        .getElementById("profile-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const username = document.getElementById("profile-username").value;
+          const currentPassword =
+            document.getElementById("current-password").value;
+          const newPassword = document.getElementById(
+            "profile-new-password"
+          ).value;
+
+          if (!currentPassword) {
+            showFlashMessage("Current password is required", "error");
+            return;
+          }
+
+          fetch("/update-profile", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username,
+              current_password: currentPassword,
+              new_password: newPassword,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                showFlashMessage("Profile updated successfully!", "success");
+                document.getElementById("profile-dropdown").style.display =
+                  "none";
+                if (data.new_username) {
+                  document.getElementById("profile-username").value =
+                    data.new_username;
+                }
+              } else {
+                showFlashMessage("Error: " + data.message, "error");
+              }
+            })
+            .catch((error) => {
+              showFlashMessage("An error occurred: " + error, "error");
+            });
+        });
+
+      function showFlashMessage(message, type) {
+        const flashDiv = document.createElement("div");
+        flashDiv.className = `flash ${type}`;
+        flashDiv.textContent = message;
+        document.querySelector(".dashboard-container").prepend(flashDiv);
+        setTimeout(() => flashDiv.remove(), 5000);
+      }
+    </script>
   </body>
 </html>

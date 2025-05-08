@@ -1,11 +1,36 @@
 {% extends "admin.html" %} {% block page_title %}Redemptions{% endblock %} {%
 block content %}
 <style>
-  /* Reuse the same styles from transactions */
+  .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .form-control {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.875rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    padding: 0.875rem 1.5rem;
+    background-color: #4361ee;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
   .search-container {
     position: relative;
     flex: 1;
   }
+
   .suggestions-box {
     position: absolute;
     background: white;
@@ -18,53 +43,29 @@ block content %}
     border-radius: 0 0 4px 4px;
     display: none;
   }
+
   .suggestion-item {
     padding: 10px;
     cursor: pointer;
     border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
   }
-  .suggestion-item:hover {
-    background-color: #f5f5f5;
-  }
+
   .customer-info {
     display: flex;
     justify-content: space-between;
   }
+
   .customer-name {
     font-weight: 600;
   }
+
   .customer-points {
     color: #27ae60;
     font-weight: 500;
   }
-  .form-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .form-control {
-    flex: 1;
-    min-width: 150px;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  .btn {
-    padding: 0.75rem 1.5rem;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .btn:hover {
-    background-color: #2980b9;
-  }
 </style>
 
-<h3>Redeem Points</h3>
+<h3>Redeem Points for Fuel</h3>
 <form method="post" action="/redeem">
   <div class="form-row">
     <div class="search-container">
@@ -72,7 +73,7 @@ block content %}
         type="text"
         id="customer-search"
         class="form-control"
-        placeholder="Search customer (name or ID)"
+        placeholder="Input Customer ID"
         autocomplete="off"
         required
       />
@@ -80,26 +81,26 @@ block content %}
       <div id="customer-suggestions" class="suggestions-box"></div>
     </div>
 
-    <select name="reward_id" class="form-control" required>
-      <option value="">Select Reward</option>
-      {% for reward in rewards %}
-      <option value="{{ reward[0] }}">
-        {{ reward[1] }} ({{ reward[2] }} points)
-      </option>
-      {% endfor %}
-    </select>
+    <input
+      type="number"
+      name="points_to_redeem"
+      class="form-control"
+      placeholder="Points to redeem (1 point = 1 peso)"
+      required
+      min="1"
+    />
 
     <button type="submit" class="btn">Redeem</button>
   </div>
 </form>
 
 <h3>Redemption History</h3>
-<table>
+<table class="modern-table">
   <thead>
     <tr>
       <th>DATE</th>
       <th>CUSTOMER</th>
-      <th>REWARD</th>
+      <th>REDEMPTION</th>
       <th>POINTS</th>
     </tr>
   </thead>
@@ -109,14 +110,14 @@ block content %}
       <td>{{ r[0] }}</td>
       <td>{{ r[4] }} (CUST-{{ r[1] }})</td>
       <td>{{ r[2] }}</td>
-      <td>{{ r[3] }}</td>
+      <td>{{ "{:,}".format(r[3]) }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 
 <script>
-  // Customer Search Functionality
+  // Customer Search
   document
     .getElementById("customer-search")
     .addEventListener("input", function () {
@@ -142,11 +143,15 @@ block content %}
             const div = document.createElement("div");
             div.className = "suggestion-item";
             div.innerHTML = `
-                    <div class="customer-info">
-                        <span class="customer-name">${customer.name} (CUST-${customer.id})</span>
-                        <span class="customer-points">${customer.points} pts</span>
-                    </div>
-                `;
+                  <div class="customer-info">
+                      <span class="customer-name">${customer.name} (CUST-${
+              customer.id
+            })</span>
+                      <span class="customer-points">${formatNumber(
+                        customer.points
+                      )} pts</span>
+                  </div>
+              `;
             div.addEventListener("click", () => {
               document.getElementById(
                 "customer-search"
@@ -161,11 +166,8 @@ block content %}
         });
     });
 
-  // Hide suggestions when clicking elsewhere
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".search-container")) {
-      document.getElementById("customer-suggestions").style.display = "none";
-    }
-  });
+  function formatNumber(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
 </script>
 {% endblock %}

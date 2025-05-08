@@ -1,43 +1,394 @@
-<!-- customer.html -->
 {% extends "admin.html" %} {% block content %}
-<h3>Customer Registration</h3>
-<form method="post" action="/customers">
-  <button type="submit" class="btn">Generate New Customer Ticket</button>
-</form>
+<div class="customer-management">
+  <div class="customer-header">
+    <h3>Customer Management</h3>
+    <div class="header-actions">
+      <form method="post" action="/customers" class="generate-form">
+        <button type="submit" class="btn btn-primary">
+          <i class="icon-plus"></i> Generate New Customer
+        </button>
+      </form>
 
-<!-- Add search functionality -->
-<form method="get" action="/customers" class="search-form">
-  <input
-    type="text"
-    name="search"
-    placeholder="Search by ID or name"
-    class="form-control"
-  />
-  <button type="submit" class="btn">Search</button>
-</form>
+      <form method="get" action="/customers" class="search-form">
+        <div class="search-container">
+          <input
+            type="text"
+            id="customer-search"
+            name="search"
+            class="search-input"
+            placeholder="Search by customer ID..."
+            autocomplete="off"
+            value="{{ request.args.get('search', '') }}"
+          />
+          <div id="customer-suggestions" class="suggestions-box"></div>
+          <button type="submit" class="search-btn">
+            <i class="icon-search"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>NAME</th>
-      <th>REGISTERED ON</th>
-      <th>POINTS BALANCE</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for customer in customers %}
-    <tr>
-      <td>{{ customer[0] }}</td>
-      <!-- ID -->
-      <td>{{ customer[1] }}</td>
-      <!-- Name -->
-      <td>{{ customer[2] }}</td>
-      <!-- Registration date -->
-      <td>{{ customer[3] }}</td>
-      <!-- Total points -->
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <div class="customer-table-container">
+    <table class="modern-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Customer Name</th>
+          <th>Registration Date</th>
+          <th>Points Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for customer in customers %}
+        <tr>
+          <td class="customer-id">CUST-{{ customer[0] }}</td>
+          <td class="customer-name">{{ customer[1] }}</td>
+          <td class="registration-date">{{ customer[2] }}</td>
+          <td class="points-balance">
+            <span class="points-badge"
+              >{{ "{:,}".format(customer[3]|int) }}</span
+            >
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .customer-management {
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .customer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .customer-header h3 {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .search-form {
+    flex: 1;
+    min-width: 250px;
+    max-width: 400px;
+  }
+
+  .search-container {
+    position: relative;
+    display: flex;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    padding-right: 40px;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  }
+
+  .search-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 40px;
+    background: none;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .customer-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #edf2f7;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2d3748;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: #718096;
+  }
+
+  .modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .modern-table th {
+    background-color: #f7fafc;
+    color: #4a5568;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+  }
+
+  .modern-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 0.95rem;
+  }
+
+  .modern-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .modern-table tr:hover td {
+    background-color: #f8fafc;
+  }
+
+  .customer-id {
+    font-weight: 600;
+    color: #4299e1;
+  }
+
+  .customer-name {
+    font-weight: 500;
+  }
+
+  .registration-date {
+    color: #718096;
+    font-size: 0.9rem;
+  }
+
+  .points-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background-color: #ebf8ff;
+    color: #3182ce;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .actions {
+    white-space: nowrap;
+  }
+
+  .action-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .view-btn {
+    background-color: #ebf8ff;
+    color: #3182ce;
+  }
+
+  .view-btn:hover {
+    background-color: #bee3f8;
+  }
+
+  .icon-plus,
+  .icon-search,
+  .icon-eye {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .icon-plus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 6v6m0 0v6m0-6h6m-6 0H6' /%3E%3C/svg%3E");
+  }
+
+  .icon-search {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' /%3E%3C/svg%3E");
+  }
+
+  .icon-eye {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' /%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' /%3E%3C/svg%3E");
+  }
+
+  @media (max-width: 768px) {
+    .customer-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-actions {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .search-form {
+      width: 100%;
+      max-width: none;
+    }
+
+    .customer-stats {
+      flex-direction: column;
+    }
+
+    .modern-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+  .search-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .suggestions-box {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 4px 4px;
+    display: none;
+  }
+
+  .suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+  }
+
+  .customer-info {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .customer-id {
+    font-weight: 600;
+    color: #4299e1;
+  }
+
+  .customer-points {
+    color: #27ae60;
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  // Customer Search Functionality
+  document
+    .getElementById("customer-search")
+    .addEventListener("input", function () {
+      const query = this.value.trim();
+      const suggestionsBox = document.getElementById("customer-suggestions");
+
+      if (query.length < 1) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+
+      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+        .then((response) => response.json())
+        .then((customers) => {
+          suggestionsBox.innerHTML = "";
+
+          if (customers.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
+
+          customers.forEach((customer) => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.innerHTML = `
+            <div class="customer-info">
+              <span class="customer-id">Customer ${customer.id}</span>
+              <span class="customer-points">${customer.points.toFixed(
+                2
+              )} pts</span>
+            </div>
+            <div>Registered: ${customer.registration_date}</div>
+          `;
+            div.addEventListener("click", () => {
+              document.getElementById(
+                "customer-search"
+              ).value = `Customer ${customer.id}`;
+              suggestionsBox.style.display = "none";
+              // Submit the form automatically when a suggestion is clicked
+              document.querySelector(".search-form").submit();
+            });
+            suggestionsBox.appendChild(div);
+          });
+
+          suggestionsBox.style.display = "block";
+        });
+    });
+
+  // Hide suggestions when clicking elsewhere
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".search-container")) {
+      document.getElementById("customer-suggestions").style.display = "none";
+    }
+  });
+  document.querySelectorAll(".view-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const customerId = this.getAttribute("data-id");
+      alert(`View customer CUST-${customerId}`);
+    });
+  });
+
+  function formatNumber(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+</script>
 {% endblock %}

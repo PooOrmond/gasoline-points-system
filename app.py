@@ -6,23 +6,23 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# Temporary admin credentials (username: admin, password: 1234)
+# Admin credentials
 ADMIN_CREDENTIALS = {
     'username': 'admin',
     'password': generate_password_hash('1234')
 }
 
-# Initialize database
 def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     
+    # Create tables with REAL type for decimal points
     c.execute('''CREATE TABLE IF NOT EXISTS transactions
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   ticket_number TEXT,
                   fuel_type TEXT,
                   amount REAL,
-                  points_earned INTEGER,
+                  points_earned REAL,
                   date TEXT,
                   customer_id INTEGER)''')
     
@@ -30,33 +30,18 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   name TEXT,
                   registration_date TEXT,
-                  total_points INTEGER DEFAULT 0)''')
+                  total_points REAL DEFAULT 0)''')
     
     c.execute('''CREATE TABLE IF NOT EXISTS redemptions
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   customer_id INTEGER,
                   reward_name TEXT,
-                  points_redeemed INTEGER,
+                  points_redeemed REAL,
                   date TEXT)''')
-    
-    c.execute('''CREATE TABLE IF NOT EXISTS rewards
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT,
-                  points_required INTEGER,
-                  status TEXT DEFAULT 'Active')''')
-    
-    # Add sample rewards if table is empty
-    c.execute("SELECT COUNT(*) FROM rewards")
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO rewards (name, points_required) VALUES (?, ?)",
-                  ("1 Liter of Fuel", 100))
-        c.execute("INSERT INTO rewards (name, points_required) VALUES (?, ?)",
-                  ("Free Refill", 500))
     
     conn.commit()
     conn.close()
 
-# Login required decorator
 def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session:
@@ -66,30 +51,30 @@ def login_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
-# Context processor
 @app.context_processor
 def inject_stats():
     stats = {
         'total_transactions': 0,
         'total_sales': 0,
-        'total_customers': 0
+        'total_customers': 0,
+        'ADMIN_CREDENTIALS': ADMIN_CREDENTIALS
     }
     try:
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
         c.execute("SELECT COUNT(*) FROM transactions")
-        stats['total_transactions'] = c.fetchone()[0] or 0
+        stats['total_transactions'] = "{:,}".format(c.fetchone()[0] or 0)
         c.execute("SELECT SUM(amount) FROM transactions")
-        stats['total_sales'] = c.fetchone()[0] or 0
+        total_sales = c.fetchone()[0] or 0
+        stats['total_sales'] = "{:,.2f}".format(total_sales)
         c.execute("SELECT COUNT(*) FROM customers")
-        stats['total_customers'] = c.fetchone()[0] or 0
+        stats['total_customers'] = "{:,}".format(c.fetchone()[0] or 0)
     except:
         pass
     finally:
         conn.close()
     return stats
 
-# Routes
 @app.route('/')
 def login():
     session.clear()
@@ -124,15 +109,40 @@ def customer_search():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     
-    if query.startswith('c') and query[1:].isdigit():
-        customer_id = query[1:]
-        c.execute("SELECT id, name, total_points FROM customers WHERE id = ?", (customer_id,))
-    else:
-        search_term = f"%{query}%"
-        c.execute("SELECT id, name, total_points FROM customers WHERE name LIKE ?", (search_term,))
+    try:
+        # Search by ID if query starts with number
+        if query.isdigit():
+            c.execute("""
+                SELECT id, name, registration_date, total_points 
+                FROM customers 
+                WHERE id = ?
+                ORDER BY id DESC
+                LIMIT 10
+            """, (query,))
+        else:
+            # Search by partial match to customer ID
+            search_term = f"%{query}%"
+            c.execute("""
+                SELECT id, name, registration_date, total_points 
+                FROM customers 
+                WHERE name LIKE ? OR id LIKE ?
+                ORDER BY id DESC
+                LIMIT 10
+            """, (search_term, search_term))
+        
+        customers = [{
+            'id': row[0],
+            'name': row[1],
+            'registration_date': row[2],
+            'points': row[3]
+        } for row in c.fetchall()]
+        
+    except Exception as e:
+        customers = []
+        print(f"Search error: {str(e)}")
+    finally:
+        conn.close()
     
-    customers = [{'id': row[0], 'name': row[1], 'points': row[2]} for row in c.fetchall()]
-    conn.close()
     return jsonify(customers)
 
 @app.route('/transactions', methods=['GET', 'POST'])
@@ -150,7 +160,8 @@ def transactions():
             flash('Customer selection is required', 'error')
             return redirect(url_for('transactions'))
         
-        points_earned = int(amount // 100)
+        # Calculate points as 1% of amount (₱100 = 1.00 point)
+        points_earned = round(amount * 0.01, 2)
         date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         
@@ -164,7 +175,7 @@ def transactions():
                      (points_earned, customer_id))
             
             conn.commit()
-            flash('Transaction recorded successfully!', 'success')
+            flash(f'Transaction recorded! ₱{amount:.2f} → {points_earned:.2f} points earned', 'success')
         except Exception as e:
             conn.rollback()
             flash(f'Error: {str(e)}', 'error')
@@ -190,19 +201,19 @@ def update_transaction():
         transaction_id = request.form['id']
         new_amount = float(request.form['amount'])
         
-        # Get original transaction data
-        c.execute("SELECT amount, points_earned, customer_id FROM transactions WHERE id = ?", (transaction_id,))
-        old_amount, old_points, customer_id = c.fetchone()
+        # Recalculate points based on new amount
+        new_points = round(new_amount * 0.01, 2)
         
-        # Calculate new points (1 point per ₱100)
-        new_points = int(new_amount // 100)
+        # Get original transaction data
+        c.execute("SELECT points_earned, customer_id FROM transactions WHERE id = ?", (transaction_id,))
+        old_points, customer_id = c.fetchone()
         points_diff = new_points - old_points
         
         # Update transaction
         c.execute("UPDATE transactions SET amount = ?, points_earned = ? WHERE id = ?",
                  (new_amount, new_points, transaction_id))
         
-        # Update customer's points if customer exists
+        # Update customer's points
         if customer_id:
             c.execute("UPDATE customers SET total_points = total_points + ? WHERE id = ?",
                      (points_diff, customer_id))
@@ -256,17 +267,9 @@ def redeem():
     
     if request.method == 'POST':
         customer_id = request.form['customer_id']
-        reward_id = request.form['reward_id']
+        points_to_redeem = float(request.form['points_to_redeem'])
         
-        c.execute("SELECT name, points_required FROM rewards WHERE id = ?", (reward_id,))
-        reward = c.fetchone()
-        
-        if not reward:
-            flash('Invalid reward selected', 'error')
-            return redirect(url_for('redeem'))
-        
-        reward_name, points_required = reward
-        
+        # Get customer's current points
         c.execute("SELECT total_points FROM customers WHERE id = ?", (customer_id,))
         customer_points = c.fetchone()
         
@@ -274,29 +277,31 @@ def redeem():
             flash('Customer not found', 'error')
             return redirect(url_for('redeem'))
         
-        if customer_points[0] < points_required:
-            flash('Not enough points for this reward', 'error')
+        if customer_points[0] < points_to_redeem:
+            flash('Not enough points for this redemption', 'error')
+            return redirect(url_for('redeem'))
+        
+        if points_to_redeem <= 0:
+            flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
         date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        peso_value = round(points_to_redeem / 0.01, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 
                     VALUES (?, ?, ?, ?)""",
-                 (customer_id, reward_name, points_required, date))
+                 (customer_id, f"{peso_value:.2f}₱ fuel refill", points_to_redeem, date))
         
         c.execute("UPDATE customers SET total_points = total_points - ? WHERE id = ?",
-                 (points_required, customer_id))
+                 (points_to_redeem, customer_id))
         
         conn.commit()
         conn.close()
-        flash(f'Successfully redeemed {reward_name} for {points_required} points!', 'success')
+        flash(f'Successfully redeemed {points_to_redeem:.2f} points for {peso_value:.2f}₱ fuel!', 'success')
         return redirect(url_for('redeem'))
     
     c.execute("SELECT id, name, total_points FROM customers")
     customers = c.fetchall()
-    
-    c.execute("SELECT * FROM rewards WHERE status = 'Active'")
-    rewards = c.fetchall()
     
     c.execute('''SELECT r.date, r.customer_id, r.reward_name, r.points_redeemed, c.name 
                 FROM redemptions r
@@ -307,53 +312,50 @@ def redeem():
     conn.close()
     return render_template('redeem.html',
                          customers=customers,
-                         rewards=rewards,
                          redemptions=redemptions)
 
-@app.route('/points')
-@login_required
-def points_management():
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    username = data.get('username')
+    new_password = data.get('new_password')
     
-    c.execute("SELECT * FROM rewards")
-    rewards = c.fetchall()
+    if not username or not new_password:
+        return jsonify({'success': False, 'message': 'Username and password are required'})
     
-    conn.close()
-    return render_template('points.html', rewards=rewards)
+    if len(new_password) < 4:
+        return jsonify({'success': False, 'message': 'Password must be at least 4 characters'})
+    
+    if username != ADMIN_CREDENTIALS['username']:
+        return jsonify({'success': False, 'message': 'Username not found'})
+    
+    ADMIN_CREDENTIALS['password'] = generate_password_hash(new_password)
+    return jsonify({'success': True, 'message': 'Password reset successfully'})
 
-@app.route('/add_reward', methods=['POST'])
+@app.route('/update-profile', methods=['POST'])
 @login_required
-def add_reward():
-    name = request.form['name']
-    points_required = int(request.form['points_required'])
+def update_profile():
+    data = request.get_json()
+    new_username = data.get('username')
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
     
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
+    if not check_password_hash(ADMIN_CREDENTIALS['password'], current_password):
+        return jsonify({'success': False, 'message': 'Current password is incorrect'})
     
-    c.execute("INSERT INTO rewards (name, points_required) VALUES (?, ?)",
-             (name, points_required))
-    conn.commit()
-    conn.close()
-    flash('Reward added successfully!', 'success')
-    return redirect(url_for('points_management'))
-
-@app.route('/toggle_reward/<int:reward_id>')
-@login_required
-def toggle_reward(reward_id):
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
+    if new_username != ADMIN_CREDENTIALS['username']:
+        ADMIN_CREDENTIALS['username'] = new_username
     
-    c.execute("SELECT status FROM rewards WHERE id = ?", (reward_id,))
-    current_status = c.fetchone()[0]
+    if new_password:
+        if len(new_password) < 4:
+            return jsonify({'success': False, 'message': 'Password must be at least 4 characters'})
+        ADMIN_CREDENTIALS['password'] = generate_password_hash(new_password)
     
-    new_status = 'Inactive' if current_status == 'Active' else 'Active'
-    c.execute("UPDATE rewards SET status = ? WHERE id = ?", (new_status, reward_id))
-    
-    conn.commit()
-    conn.close()
-    flash(f'Reward status updated to {new_status}', 'success')
-    return redirect(url_for('points_management'))
+    return jsonify({
+        'success': True,
+        'message': 'Profile updated successfully',
+        'new_username': ADMIN_CREDENTIALS['username']
+    })
 
 if __name__ == '__main__':
     init_db()
