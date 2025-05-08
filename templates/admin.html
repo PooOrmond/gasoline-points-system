@@ -3,6 +3,11 @@
   <head>
     <title>Fuel Reward System - Dashboard</title>
     <link rel="stylesheet" href="/static/css/style.css" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/FRS_LOGO.png') }}"
+    />
   </head>
   <body>
     <div class="dashboard-container">
@@ -24,9 +29,15 @@
           </div>
         </div>
       </div>
-
       <div class="dashboard-header">
-        <h1>Fuel Reward System</h1>
+        <div class="logo-title">
+          <img
+            src="{{ url_for('static', filename='images/FRS_LOGO.png') }}"
+            alt="Logo"
+            class="logo"
+          />
+          <h1>Fuel Reward System</h1>
+        </div>
         <div class="profile-section">
           <button id="profile-btn" class="btn">Profile</button>
           <div id="profile-dropdown">

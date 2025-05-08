@@ -626,3 +626,41 @@ select.form-control {
     padding: 0.75rem 1rem;
   }
 }
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* spacing between logo and title */
+}
+
+.logo {
+  height: 100px; /* adjust as needed */
+  width: auto;
+}
+
+/* Adjusting logo in the header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.dashboard-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: -0.5px;
+}
+/* Adjust Logo Size for Smaller Screens */
+@media (max-width: 768px) {
+  .logo {
+    max-height: 40px; /* Smaller size for mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    max-height: 30px; /* Even smaller for very small screens */
+  }
+}
