@@ -47,7 +47,7 @@
           <td class="registration-date">{{ customer[2] }}</td>
           <td class="points-balance">
             <span class="points-badge"
-              >{{ "{:,}".format(customer[3]|int) }}</span
+              >{{ "{:,.2f}".format(customer[3]) }}</span
             >
           </td>
         </tr>
