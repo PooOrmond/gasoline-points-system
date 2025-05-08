@@ -168,6 +168,9 @@ def transactions():
         date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
         transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
         
+        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        #transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
         try:
             c.execute("""INSERT INTO transactions 
                         (ticket_number, fuel_type, amount, points_earned, date, customer_id) 
@@ -288,8 +291,10 @@ def redeem():
             flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
+        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
-        peso_value = round(points_to_redeem / 0.01, 2)
+        peso_value = round(points_to_redeem, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 
                     VALUES (?, ?, ?, ?)""",
