@@ -109,9 +109,10 @@ block content %}
     <tr>
       <td>{{ r[0] }}</td>
       <td>{{ r[4] }} (CUST-{{ r[1] }})</td>
-      <td>{{ r[2] }}</td>
-      <td>{{ "{:,}".format(r[3]) }}</td>
+      <td>₱{{ "%.2f"|format(r[3]|float) }}</td>
+      <td>{{ "%.2f"|format(r[3]|float) }}</td>
     </tr>
+
     {% endfor %}
   </tbody>
 </table>

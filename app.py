@@ -298,7 +298,7 @@ def redeem():
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 
                     VALUES (?, ?, ?, ?)""",
-                 (customer_id, f"{peso_value:.2f}₱ fuel refill", points_to_redeem, date))
+                 (customer_id, f"₱{peso_value:.2f} fuel refill", points_to_redeem, date))
         
         c.execute("UPDATE customers SET total_points = total_points - ? WHERE id = ?",
                  (points_to_redeem, customer_id))
