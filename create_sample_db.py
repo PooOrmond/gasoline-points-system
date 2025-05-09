@@ -34,8 +34,8 @@ def generate_customers(conn):
     start_date = datetime(2005, 1, 1)
     end_date = datetime(2025, 5, 1)
     
-    for customer_id in range(1, 1001):
-        progress = customer_id / 1000
+    for customer_id in range(1, 501):
+        progress = customer_id / 500
         registration_date = start_date + (end_date - start_date) * progress
         variation = timedelta(days=random.randint(-60, 60))
         registration_date += variation
@@ -53,7 +53,7 @@ def generate_transactions(conn):
     fuel_types = ['Regular', 'Premium']
     current_date = datetime.now()
     
-    for customer_id in range(1, 1001):
+    for customer_id in range(1, 501):
         c.execute("SELECT registration_date FROM customers WHERE id = ?", (customer_id,))
         reg_date = datetime.strptime(c.fetchone()[0], '%Y-%m-%d %H:%M:%S')
         
