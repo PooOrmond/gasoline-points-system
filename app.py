@@ -243,7 +243,7 @@ def customers():
         max_id = c.fetchone()[0]
         new_id = 1 if max_id is None else max_id + 1
         
-        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y%m%d%H%M%S')
+        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
         c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
                  (new_id, f"Customer {new_id}", registration_date))
         conn.commit()
