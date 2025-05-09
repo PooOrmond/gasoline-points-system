@@ -165,11 +165,12 @@ def transactions():
         
         # Calculate points as 1% of amount (₱100 = 1.00 point)
         points_earned = round(amount * 0.01, 2)
-        date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
-        transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
+
+        # date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+        # transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
         
-        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        #transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
         try:
             c.execute("""INSERT INTO transactions 
@@ -243,7 +244,10 @@ def customers():
         max_id = c.fetchone()[0]
         new_id = 1 if max_id is None else max_id + 1
         
-        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+
         c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
                  (new_id, f"Customer {new_id}", registration_date))
         conn.commit()
@@ -251,21 +255,43 @@ def customers():
         return redirect(url_for('customers'))
     
     search = request.args.get('search', '')
-    # Modified query to include total amount spent
+    sort_option = request.args.get('sort', 'id_desc')
+    
+    # Base query
     query = """
         SELECT c.id, c.name, c.registration_date, c.total_points, 
                COALESCE(SUM(t.amount), 0) as total_amount
         FROM customers c
         LEFT JOIN transactions t ON c.id = t.customer_id
     """
+    
+    # Add search condition if provided
     if search:
         if search.upper().startswith('CUST-'):
             cust_id = search.upper().replace('CUST-', '')
             query += f" WHERE c.id = '{cust_id}'"
         else:
             query += f" WHERE c.name LIKE '%{search}%'"
+    
+    # Group by clause
     query += " GROUP BY c.id, c.name, c.registration_date, c.total_points"
-    query += " ORDER BY c.id DESC"
+    
+    # Add sorting based on the selected option
+    # Add sorting based on the selected option
+    if sort_option == 'id_desc':
+        query += " ORDER BY c.id DESC"
+    elif sort_option == 'id_asc':
+        query += " ORDER BY c.id ASC"
+    elif sort_option == 'points_desc':
+        query += " ORDER BY c.total_points DESC"
+    elif sort_option == 'points_asc':
+        query += " ORDER BY c.total_points ASC"
+    elif sort_option == 'spent_desc':
+        query += " ORDER BY total_amount DESC"
+    elif sort_option == 'spent_asc':
+        query += " ORDER BY total_amount ASC"
+    else:
+        query += " ORDER BY c.id DESC"  # Default sorting
     
     c.execute(query)
     customers = c.fetchall()
@@ -298,9 +324,9 @@ def redeem():
             flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
-        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        # date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
         peso_value = round(points_to_redeem, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 

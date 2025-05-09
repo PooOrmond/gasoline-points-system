@@ -2,19 +2,17 @@ import sqlite3
 import random
 from datetime import datetime, timedelta
 
-def create_sample_database():
-    # Create or connect to database
+def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     
-    # Create tables
-    c.execute('''CREATE TABLE IF NOT EXISTS customers
+    c.execute('''CREATE TABLE customers
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   name TEXT,
                   registration_date TEXT,
                   total_points REAL DEFAULT 0)''')
     
-    c.execute('''CREATE TABLE IF NOT EXISTS transactions
+    c.execute('''CREATE TABLE transactions
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   ticket_number TEXT,
                   fuel_type TEXT,
@@ -23,58 +21,90 @@ def create_sample_database():
                   date TEXT,
                   customer_id INTEGER)''')
     
-    # Start registration date
-    current_date = datetime(2005, 1, 17, 1, 14, 29)
+    conn.commit()
+    return conn
+
+def random_date(start, end):
+    delta = end - start
+    random_days = random.randrange(delta.days)
+    return start + timedelta(days=random_days)
+
+def generate_customers(conn):
+    c = conn.cursor()
+    start_date = datetime(2005, 1, 1)
+    end_date = datetime(2025, 5, 1)
     
-    for i in range(1, 1001):
-        name = f"Customer {i}"
-
-        # Save registration datetime
-        reg_date_str = current_date.strftime('%Y-%m-%d %H:%M:%S')
+    for customer_id in range(1, 1556):
+        progress = customer_id / 1555
+        registration_date = start_date + (end_date - start_date) * progress
+        variation = timedelta(days=random.randint(-60, 60))
+        registration_date += variation
         
-        # Random points balance
-        points = round(random.uniform(0, 500), 2)
-
-        # Insert customer
-        c.execute("INSERT INTO customers (name, registration_date, total_points) VALUES (?, ?, ?)",
-                  (name, reg_date_str, points))
+        if registration_date > end_date:
+            registration_date = end_date - timedelta(days=random.randint(1, 30))
         
-        # Generate 1–5 transactions
-        for _ in range(random.randint(1, 5)):
-            fuel_type = random.choice(["Regular", "Premium"])
-            amount = round(random.uniform(100, 5000), 2)
-            points_earned = round(amount * 0.01, 2)
+        c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
+                 (customer_id, f"Customer {customer_id}", registration_date.strftime('%Y-%m-%d %H:%M:%S')))
+    
+    conn.commit()
+
+def generate_transactions(conn):
+    c = conn.cursor()
+    fuel_types = ['Regular', 'Premium']
+    current_date = datetime.now()
+    
+    for customer_id in range(1, 1556):
+        c.execute("SELECT registration_date FROM customers WHERE id = ?", (customer_id,))
+        reg_date = datetime.strptime(c.fetchone()[0], '%Y-%m-%d %H:%M:%S')
+        
+        days_since_reg = (current_date - reg_date).days
+        
+        # Ensure at least 1 transaction for all customers
+        min_transactions = 1
+        
+        # Calculate max transactions based on registration age
+        max_transactions = min(50, max(1, int(days_since_reg / 30)))  # At least 1, max 50
+        
+        # Make sure max >= min
+        if max_transactions < min_transactions:
+            max_transactions = min_transactions
             
-            # Transaction date: 1–730 days after registration, add time
-            trans_date = current_date + timedelta(days=random.randint(1, 730),
-                                                  hours=random.randint(0, 23),
-                                                  minutes=random.randint(0, 59),
-                                                  seconds=random.randint(0, 59))
-            # Ensure transaction date does not exceed 2025-12-31
-            if trans_date.year > 2025:
-                trans_date = datetime(2025, 12, 31, 23, 59, 59)
-
-            trans_date_str = trans_date.strftime('%Y-%m-%d %H:%M:%S')
-            ticket_number = f"TRX-{i}-{trans_date.strftime('%Y%m%d%H%M%S')}"
+        num_transactions = random.randint(min_transactions, max_transactions)
+        
+        total_spent = 0
+        
+        for _ in range(num_transactions):
+            trans_date = random_date(reg_date, current_date)
+            amount = max(75, random.expovariate(1/1000))
+            amount = round(amount, 2)
+            points = round(amount * 0.01, 2)
+            fuel_type = random.choice(fuel_types)
+            ticket_number = f"TRX-{customer_id}-{trans_date.strftime('%Y%m%d%H%M%S')}"
             
             c.execute("""INSERT INTO transactions 
-                         (ticket_number, fuel_type, amount, points_earned, date, customer_id)
-                         VALUES (?, ?, ?, ?, ?, ?)""",
-                      (ticket_number, fuel_type, amount, points_earned, trans_date_str, i))
+                        (ticket_number, fuel_type, amount, points_earned, date, customer_id) 
+                        VALUES (?, ?, ?, ?, ?, ?)""",
+                     (ticket_number, fuel_type, amount, points, trans_date.strftime('%Y-%m-%d %H:%M:%S'), customer_id))
+            
+            total_spent += amount
         
-        # Advance current_date for next customer (1–3 days + random time)
-        current_date += timedelta(days=random.randint(1, 3),
-                                  hours=random.randint(0, 3),
-                                  minutes=random.randint(0, 59),
-                                  seconds=random.randint(0, 59))
-        
-        # Stop if we're about to exceed year 2025
-        if current_date.year > 2025:
-            break
-
+        total_points = round(total_spent * 0.01, 2)
+        c.execute("UPDATE customers SET total_points = ? WHERE id = ?", (total_points, customer_id))
+    
     conn.commit()
-    conn.close()
-    print("Successfully created sample database with customers from 2005 to 2025.")
 
 if __name__ == '__main__':
-    create_sample_database()
+    print("Creating database...")
+    conn = init_db()
+    
+    print("Generating 1,555 customers (2005-2025)...")
+    generate_customers(conn)
+    
+    print("Generating transaction histories...")
+    generate_transactions(conn)
+    
+    conn.close()
+    print("Successfully created database.db with:")
+    print("- 1,555 customers spanning 2005-2025")
+    print("- Realistic transaction patterns")
+    print("- Points calculated as 1% of spending")

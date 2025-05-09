@@ -9,23 +9,44 @@
         </button>
       </form>
 
-      <form method="get" action="/customers" class="search-form">
-        <div class="search-container">
-          <input
-            type="text"
-            id="customer-search"
-            name="search"
-            class="search-input"
-            placeholder="Search by customer ID..."
-            autocomplete="off"
-            value="{{ request.args.get('search', '') }}"
-          />
-          <div id="customer-suggestions" class="suggestions-box"></div>
-          <button type="submit" class="search-btn">
-            <i class="icon-search"></i>
-          </button>
-        </div>
-      </form>
+      <div class="sort-search-container">
+        <form method="get" action="/customers" class="sort-form">
+          <select name="sort" class="sort-select" onchange="this.form.submit()">
+            <option value="id_desc" {% if request.args.get('sort')=='id_desc' %}selected{% endif %}>Newest First</option>
+            <option value="id_asc" {% if request.args.get('sort')=='id_asc' %}selected{% endif %}>Oldest First</option>
+            <option value="points_desc" {% if request.args.get('sort')=='points_desc' %}selected{% endif %}>Most Points</option>
+            <option value="points_asc" {% if request.args.get('sort')=='points_asc' %}selected{% endif %}>Fewest Points</option>
+            <option value="spent_desc" {% if request.args.get('sort')=='spent_desc' %}selected{% endif %}>Most Spent</option>
+            <option value="spent_asc" {% if request.args.get('sort')=='spent_asc' %}selected{% endif %}>Least Spent</option>
+          </select>
+          <!-- Preserve search query when changing sort -->
+          {% if request.args.get('search') %}
+          <input type="hidden" name="search" value="{{ request.args.get('search') }}">
+          {% endif %}
+        </form>
+
+        <form method="get" action="/customers" class="search-form">
+          <div class="search-container">
+            <input
+              type="text"
+              id="customer-search"
+              name="search"
+              class="search-input"
+              placeholder="Search by customer ID..."
+              autocomplete="off"
+              value="{{ request.args.get('search', '') }}"
+            />
+            <div id="customer-suggestions" class="suggestions-box"></div>
+            <button type="submit" class="search-btn">
+              <i class="icon-search"></i>
+            </button>
+            <!-- Preserve sort when searching -->
+            {% if request.args.get('sort') %}
+            <input type="hidden" name="sort" value="{{ request.args.get('sort') }}">
+            {% endif %}
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -327,6 +348,57 @@
   .customer-points {
     color: #27ae60;
     font-weight: 500;
+  }
+  .sort-search-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .sort-form {
+    flex: 0 0 auto;
+  }
+  
+  .sort-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .sort-select:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  }
+  
+  /* Adjust the search form to work with the new layout */
+  .search-form {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  @media (max-width: 768px) {
+    .sort-search-container {
+      flex-direction: column;
+      width: 100%;
+    }
+    
+    .sort-form {
+      width: 100%;
+    }
+    
+    .sort-select {
+      width: 100%;
+    }
+    
+    .search-form {
+      width: 100%;
+      max-width: none;
+    }
   }
 </style>
 
