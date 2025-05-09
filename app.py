@@ -166,11 +166,11 @@ def transactions():
         # Calculate points as 1% of amount (₱100 = 1.00 point)
         points_earned = round(amount * 0.01, 2)
 
-        date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
-        transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
+        # date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+        # transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
         
-        # date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
         try:
             c.execute("""INSERT INTO transactions 
@@ -190,10 +190,33 @@ def transactions():
             conn.close()
         return redirect(url_for('transactions'))
     
+    time_filter = request.args.get('time_filter', 'this_week')
+    base_query = '''SELECT t.*, c.name 
+                   FROM transactions t
+                   LEFT JOIN customers c ON t.customer_id = c.id'''
+    
+    #today = datetime.now(ZoneInfo('Asia/Manila')).date()
+
+    today = datetime.now().date()
+
+    if time_filter == 'today':
+        query = f"{base_query} WHERE date(t.date) = date('now') ORDER BY t.date DESC"
+    elif time_filter == 'this_week':
+        query = f"{base_query} WHERE date(t.date) >= date('now', 'weekday 0', '-7 days') ORDER BY t.date DESC"
+    elif time_filter == 'this_month':
+        query = f"{base_query} WHERE strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now') ORDER BY t.date DESC"
+    elif time_filter == 'last_month':
+        query = f"{base_query} WHERE strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now', 'start of month', '-1 month') ORDER BY t.date DESC"
+    elif time_filter == 'this_year':
+        query = f"{base_query} WHERE strftime('%Y', t.date) = strftime('%Y', 'now') ORDER BY t.date DESC"
+    else:  # 'all'
+        query = f"{base_query} ORDER BY t.date DESC"
+    
     c.execute('''SELECT t.*, c.name 
                 FROM transactions t
                 LEFT JOIN customers c ON t.customer_id = c.id
                 ORDER BY t.date DESC''')
+    
     transactions = c.fetchall()
     conn.close()
     return render_template('transaction.html', transactions=transactions)
@@ -244,9 +267,9 @@ def customers():
         max_id = c.fetchone()[0]
         new_id = 1 if max_id is None else max_id + 1
         
-        #registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        # registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
 
         c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
                  (new_id, f"Customer {new_id}", registration_date))
@@ -324,9 +347,9 @@ def redeem():
             flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
-        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        # date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
         peso_value = round(points_to_redeem, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 

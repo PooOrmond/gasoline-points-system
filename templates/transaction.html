@@ -1,6 +1,37 @@
 {% extends "admin.html" %} {% block content %}
 <style>
-  /* Form and Button Styles */
+  /* Add these new styles for the sort controls */
+  .sort-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .sort-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .sort-select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    min-width: 200px;
+  }
+
+  /* Rest of your existing styles remain the same */
+  .form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
   .form-row {
     display: flex;
     gap: 10px;
@@ -104,6 +135,20 @@
 </style>
 
 <form method="post" action="/transactions">
+  
+<div class="sort-controls">
+  <h3>Transaction History</h3>
+  <form method="get" action="/transactions" class="sort-form">
+    <select name="time_filter" class="sort-select" onchange="this.form.submit()">
+      <option value="this_week" {% if request.args.get('time_filter')=='this_week' %}selected{% endif %}>This Week</option>
+      <option value="today" {% if request.args.get('time_filter')=='today' %}selected{% endif %}>Today</option>
+      <option value="this_month" {% if request.args.get('time_filter')=='this_month' %}selected{% endif %}>This Month</option>
+      <option value="last_month" {% if request.args.get('time_filter')=='last_month' %}selected{% endif %}>Last Month</option>
+      <option value="this_year" {% if request.args.get('time_filter')=='this_year' %}selected{% endif %}>This Year</option>
+      <option value="all" {% if request.args.get('time_filter')=='all' %}selected{% endif %}>All Time</option>
+    </select>
+  </form>
+</div>
   <div class="form-row">
     <select name="fuel_type" class="form-control" required>
       <option value="">Fuel Type</option>
