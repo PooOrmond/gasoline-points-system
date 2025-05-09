@@ -166,11 +166,11 @@ def transactions():
         # Calculate points as 1% of amount (₱100 = 1.00 point)
         points_earned = round(amount * 0.01, 2)
 
-        # date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
-        # transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
+        date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
+        transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
         
-        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
         try:
             c.execute("""INSERT INTO transactions 
@@ -244,9 +244,9 @@ def customers():
         max_id = c.fetchone()[0]
         new_id = 1 if max_id is None else max_id + 1
         
-        registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        #registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
 
         c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
                  (new_id, f"Customer {new_id}", registration_date))
@@ -324,9 +324,9 @@ def redeem():
             flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
-        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
         peso_value = round(points_to_redeem, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 
