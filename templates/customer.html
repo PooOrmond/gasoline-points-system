@@ -37,6 +37,7 @@
           <th>Customer Name</th>
           <th>Registration Date</th>
           <th>Points Balance</th>
+          <th>Total Spent</th>
         </tr>
       </thead>
       <tbody>
@@ -48,6 +49,11 @@
           <td class="points-balance">
             <span class="points-badge"
               >{{ "{:,.2f}".format(customer[3]) }}</span
+            >
+          </td>
+          <td class="amount-spent">
+            <span class="amount-badge"
+              >₱{{ "{:,.2f}".format(customer[4]) }}</span
             >
           </td>
         </tr>

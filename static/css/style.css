@@ -664,3 +664,21 @@ select.form-control {
     max-height: 30px; /* Even smaller for very small screens */
   }
 }
+.amount-spent {
+  text-align: right;
+}
+
+.amount-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #e6ffed;
+  color: #22863a;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Update the table header alignment */
+.modern-table th:nth-child(5) {
+  text-align: right;
+}

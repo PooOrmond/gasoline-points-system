@@ -251,14 +251,21 @@ def customers():
         return redirect(url_for('customers'))
     
     search = request.args.get('search', '')
-    query = "SELECT id, name, registration_date, total_points FROM customers"
+    # Modified query to include total amount spent
+    query = """
+        SELECT c.id, c.name, c.registration_date, c.total_points, 
+               COALESCE(SUM(t.amount), 0) as total_amount
+        FROM customers c
+        LEFT JOIN transactions t ON c.id = t.customer_id
+    """
     if search:
         if search.upper().startswith('CUST-'):
             cust_id = search.upper().replace('CUST-', '')
-            query += f" WHERE id = '{cust_id}'"
+            query += f" WHERE c.id = '{cust_id}'"
         else:
-            query += f" WHERE name LIKE '%{search}%'"
-    query += " ORDER BY id DESC"
+            query += f" WHERE c.name LIKE '%{search}%'"
+    query += " GROUP BY c.id, c.name, c.registration_date, c.total_points"
+    query += " ORDER BY c.id DESC"
     
     c.execute(query)
     customers = c.fetchall()
