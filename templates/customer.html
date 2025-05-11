@@ -84,13 +84,13 @@
         <tbody>
           {% for customer in customers %}
           <tr>
-            <td class="customer-id">CUST-{{ customer[0] }}</td>
-            <td class="customer-name">{{ customer[1] }}</td>
-            <td class="registration-date">{{ customer[2] }}</td>
-            <td class="text-right">
+            <td data-label="Customer ID" class="customer-id">CUST-{{ customer[0] }}</td>
+            <td data-label="Name" class="customer-name">{{ customer[1] }}</td>
+            <td data-label="Registered" class="registration-date">{{ customer[2] }}</td>
+            <td data-label="Points" class="text-right">
               <span class="badge badge-points">{{ "{:,.2f}".format(customer[3]) }}</span>
             </td>
-            <td class="text-right">
+            <td data-label="Total Spent" class="text-right">
               <span class="badge badge-amount">₱{{ "{:,.2f}".format(customer[4]) }}</span>
             </td>
           </tr>
@@ -432,10 +432,134 @@
       align-items: flex-start;
     }
   }
+    /* Mobile-friendly table styles */
+  @media (max-width: 768px) {
+    .customer-table {
+      width: 100%;
+      border: 0;
+    }
+    
+    .customer-table thead {
+      display: none;
+    }
+    
+    .customer-table tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid var(--gray-light);
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    
+    .customer-table td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--gray-light);
+      text-align: right;
+    }
+    
+    .customer-table td:last-child {
+      border-bottom: 0;
+    }
+    
+    .customer-table td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: var(--gray-dark);
+      margin-right: 1rem;
+      text-align: left;
+    }
+    
+    .text-right {
+      justify-content: flex-end;
+    }
+    
+    /* Adjust badge styles for mobile */
+    .badge {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Additional responsive improvements */
+  @media (max-width: 576px) {
+    .management-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .action-controls {
+      flex-direction: column;
+      width: 100%;
+      gap: 1rem;
+    }
+    
+    .btn-generate {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .search-form {
+      width: 100%;
+    }
+    
+    .filter-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+    
+    .sort-filter {
+      width: 100%;
+    }
+    
+    .styled-select {
+      width: 100%;
+    }
+  }
 </style>
 
 <!-- JavaScript -->
+
 <script>
+  // Mobile-specific adjustments
+  function adjustForMobile() {
+    if (window.innerWidth <= 768) {
+      // Hide button text on mobile to save space
+      document.querySelectorAll('.btn-text').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // Make search input full width
+      document.querySelector('.search-form').style.width = '100%';
+      
+      // Adjust table cell padding
+      document.querySelectorAll('.customer-table td').forEach(td => {
+        td.style.padding = '0.75rem';
+      });
+    } else {
+      // Restore button text on larger screens
+      document.querySelectorAll('.btn-text').forEach(el => {
+        el.style.display = 'inline';
+      });
+      
+      // Restore search input width
+      document.querySelector('.search-form').style.width = '';
+      
+      // Restore table cell padding
+      document.querySelectorAll('.customer-table td').forEach(td => {
+        td.style.padding = '1rem 1.25rem';
+      });
+    }
+  }
+
+  // Run on load and resize
+  window.addEventListener('load', adjustForMobile);
+  window.addEventListener('resize', adjustForMobile);
   // Add icons using SVG
   function addIcons() {
     const icons = {
