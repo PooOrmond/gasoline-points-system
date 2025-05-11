@@ -1,31 +1,133 @@
 {% extends "admin.html" %} {% block page_title %}Redemptions{% endblock %} {%
 block content %}
 <style>
+  /* Modern Color Palette (from transaction.html) */
+  :root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --primary-light: #ebf0ff;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --dark: #212529;
+    --light: #f8f9fa;
+    --gray: #6c757d;
+    --success: #4cc9f0;
+    --error: #ef233c;
+    --bg: #ffffff;
+    --card-bg: #ffffff;
+    --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Main Container */
+  .redeem-container {
+    animation: fadeIn 0.5s ease-out;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header Styles */
+  .redeem-container h3 {
+    color: var(--dark);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--primary-light);
+    padding-bottom: 10px;
+    animation: slideInRight 0.4s ease-out;
+  }
+
+  /* Form Styles */
   .form-row {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: 15px;
+    margin-bottom: 25px;
     flex-wrap: wrap;
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    animation: fadeIn 0.6s ease-out;
   }
 
   .form-control {
     flex: 1;
     min-width: 200px;
-    padding: 0.875rem 1rem;
-    border: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    border: 1px solid #e9ecef;
     border-radius: 8px;
     font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: var(--light);
   }
 
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+
+  /* Button Styles */
   .btn {
-    padding: 0.875rem 1.5rem;
-    background-color: #4361ee;
+    padding: 0.85rem 1.5rem;
+    background-color: var(--primary);
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
   }
 
+  .btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(67, 97, 238, 0.25);
+  }
+
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  /* Search Container */
   .search-container {
     position: relative;
     flex: 1;
@@ -34,20 +136,26 @@ block content %}
   .suggestions-box {
     position: absolute;
     background: white;
-    border: 1px solid #ddd;
+    border: 1px solid #e9ecef;
     width: 100%;
     max-height: 250px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 4px 4px;
+    box-shadow: var(--card-shadow);
+    border-radius: 0 0 8px 8px;
     display: none;
+    animation: fadeIn 0.2s ease-out;
   }
 
   .suggestion-item {
-    padding: 10px;
+    padding: 12px 15px;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #f1f3f5;
+    transition: all 0.2s ease;
+  }
+
+  .suggestion-item:hover {
+    background-color: var(--primary-light);
   }
 
   .customer-info {
@@ -57,71 +165,195 @@ block content %}
 
   .customer-name {
     font-weight: 600;
+    color: var(--dark);
   }
 
   .customer-points {
-    color: #27ae60;
+    color: var(--primary);
     font-weight: 500;
+  }
+
+  /* Table Styles */
+  .modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 25px;
+    animation: fadeIn 0.7s ease-out;
+  }
+
+  .modern-table th {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    padding: 15px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .modern-table td {
+    padding: 12px 15px;
+    background-color: white;
+    border-bottom: 1px solid #f1f3f5;
+    transition: all 0.2s ease;
+  }
+
+  .modern-table tr:hover td {
+    background-color: var(--primary-light);
+    transform: translateX(2px);
+  }
+
+  .modern-table tr {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Loading Spinner */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  /* Flash Messages */
+  .flash {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    animation: fadeIn 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .flash.success {
+    background-color: rgba(76, 201, 240, 0.1);
+    color: var(--success);
+    border-left: 4px solid var(--success);
+  }
+
+  .flash.error {
+    background-color: rgba(239, 35, 60, 0.1);
+    color: var(--error);
+    border-left: 4px solid var(--error);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .form-row {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form-control,
+    .btn {
+      width: 100%;
+    }
+
+    .modern-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
+  /* In transaction.html and redeem.html */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-chips {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-chip {
+      flex: 0 0 auto;
+    }
   }
 </style>
 
-<h3>Redeem Points for Fuel</h3>
-<form method="post" action="/redeem">
-  <div class="form-row">
-    <div class="search-container">
+<div class="redeem-container">
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div class="flash {{ category }}">{{ message }}</div>
+  {% endfor %} {% endif %} {% endwith %}
+
+  <h3>Redeem Points for Fuel</h3>
+  <form method="post" action="/redeem" id="redeem-form">
+    <div class="form-row">
+      <div class="search-container">
+        <input
+          type="text"
+          id="customer-search"
+          class="form-control"
+          placeholder="Input Customer ID"
+          autocomplete="off"
+          required
+        />
+        <input type="hidden" name="customer_id" id="customer-id" required />
+        <div id="customer-suggestions" class="suggestions-box"></div>
+      </div>
+
       <input
-        type="text"
-        id="customer-search"
+        type="number"
+        name="points_to_redeem"
         class="form-control"
-        placeholder="Input Customer ID"
-        autocomplete="off"
+        placeholder="Points to redeem (1 point = 1 peso)"
         required
+        min="1"
+        step="0.01"
       />
-      <input type="hidden" name="customer_id" id="customer-id" required />
-      <div id="customer-suggestions" class="suggestions-box"></div>
+
+      <button type="submit" class="btn" id="redeem-btn">
+        <span class="btn-text">Redeem</span>
+      </button>
     </div>
+  </form>
 
-    <input
-      type="number"
-      name="points_to_redeem"
-      class="form-control"
-      placeholder="Points to redeem (1 point = 1 peso)"
-      required
-      min="1"
-    />
-
-    <button type="submit" class="btn">Redeem</button>
-  </div>
-</form>
-
-<h3>Redemption History</h3>
-<table class="modern-table">
-  <thead>
-    <tr>
-      <th>DATE</th>
-      <th>CUSTOMER</th>
-      <th>REDEMPTION</th>
-      <th>POINTS</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in redemptions %}
-    <tr>
-      <td>{{ r[0] }}</td>
-      <td>{{ r[4] }} (CUST-{{ r[1] }})</td>
-      <td>₱{{ "%.2f"|format(r[3]|float) }}</td>
-      <td>{{ "%.2f"|format(r[3]|float) }}</td>
-    </tr>
-
-    {% endfor %}
-  </tbody>
-</table>
+  <h3>Redemption History</h3>
+  <table class="modern-table">
+    <thead>
+      <tr>
+        <th>DATE</th>
+        <th>CUSTOMER</th>
+        <th>REDEMPTION</th>
+        <th>POINTS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in redemptions %}
+      <tr>
+        <td>{{ r[0] }}</td>
+        <td>{{ r[4] }} (CUST-{{ r[1] }})</td>
+        <td>₱{{ "%.2f"|format(r[3]|float) }}</td>
+        <td>{{ "%.2f"|format(r[3]|float) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 <script>
-  // Customer Search
+  // Enhanced Customer Search with Debounce
+  let searchTimeout;
   document
     .getElementById("customer-search")
     .addEventListener("input", function () {
+      clearTimeout(searchTimeout);
       const query = this.value.trim();
       const suggestionsBox = document.getElementById("customer-suggestions");
 
@@ -130,46 +362,113 @@ block content %}
         return;
       }
 
-      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
-        .then((response) => response.json())
-        .then((customers) => {
-          suggestionsBox.innerHTML = "";
+      // Show loading state
+      suggestionsBox.innerHTML =
+        '<div class="suggestion-item">Searching...</div>';
+      suggestionsBox.style.display = "block";
 
-          if (customers.length === 0) {
-            suggestionsBox.style.display = "none";
-            return;
-          }
+      searchTimeout = setTimeout(() => {
+        fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+          .then((response) => response.json())
+          .then((customers) => {
+            suggestionsBox.innerHTML = "";
 
-          customers.forEach((customer) => {
-            const div = document.createElement("div");
-            div.className = "suggestion-item";
-            div.innerHTML = `
-                  <div class="customer-info">
-                      <span class="customer-name">${customer.name} (CUST-${
-              customer.id
-            })</span>
-                      <span class="customer-points">${parseFloat(
-                        customer.points
-                      )
-                        .toFixed(2)
-                        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} pts</span>
+            if (customers.length === 0) {
+              suggestionsBox.innerHTML =
+                '<div class="suggestion-item">No customers found</div>';
+              return;
+            }
 
-                  </div>
-              `;
-            div.addEventListener("click", () => {
-              document.getElementById(
-                "customer-search"
-              ).value = `${customer.name} (CUST-${customer.id})`;
-              document.getElementById("customer-id").value = customer.id;
-              suggestionsBox.style.display = "none";
+            customers.forEach((customer) => {
+              const div = document.createElement("div");
+              div.className = "suggestion-item";
+              div.innerHTML = `
+              <div class="customer-info">
+                <span class="customer-name">${customer.name} (CUST-${
+                customer.id
+              })</span>
+                <span class="customer-points">${customer.points.toFixed(
+                  2
+                )} pts</span>
+              </div>
+            `;
+              div.addEventListener("click", () => {
+                document.getElementById(
+                  "customer-search"
+                ).value = `${customer.name} (CUST-${customer.id})`;
+                document.getElementById("customer-id").value = customer.id;
+                suggestionsBox.style.display = "none";
+              });
+              suggestionsBox.appendChild(div);
             });
-            suggestionsBox.appendChild(div);
+          })
+          .catch(() => {
+            suggestionsBox.innerHTML =
+              '<div class="suggestion-item">Error searching</div>';
           });
-
-          suggestionsBox.style.display = "block";
-        });
+      }, 300);
     });
 
+  // Hide suggestions when clicking elsewhere
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".search-container")) {
+      document.getElementById("customer-suggestions").style.display = "none";
+    }
+  });
+
+  // Form Submission with Loading Animation
+  document
+    .getElementById("redeem-form")
+    .addEventListener("submit", function (e) {
+      const pointsInput = document.querySelector(
+        'input[name="points_to_redeem"]'
+      );
+      if (!pointsInput.value || isNaN(parseFloat(pointsInput.value))) {
+        e.preventDefault();
+        showFlashMessage("Please enter valid points to redeem", "error");
+        pointsInput.focus();
+      } else if (parseFloat(pointsInput.value) < 1) {
+        e.preventDefault();
+        showFlashMessage("Minimum redemption is 1 point", "error");
+        pointsInput.focus();
+      } else {
+        const btn = document.getElementById("redeem-btn");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+      }
+    });
+
+  // Enhanced Flash Message
+  function showFlashMessage(message, type) {
+    const flashDiv = document.createElement("div");
+    flashDiv.className = `flash ${type}`;
+    flashDiv.textContent = message;
+    flashDiv.style.opacity = "0";
+    flashDiv.style.transform = "translateY(10px)";
+
+    const existingFlash = document.querySelector(".flash");
+    if (existingFlash) {
+      existingFlash.remove();
+    }
+
+    const form = document.querySelector("form");
+    form.insertAdjacentElement("beforebegin", flashDiv);
+
+    // Animate in
+    setTimeout(() => {
+      flashDiv.style.opacity = "1";
+      flashDiv.style.transform = "translateY(0)";
+    }, 10);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      flashDiv.style.opacity = "0";
+      flashDiv.style.transform = "translateY(-10px)";
+      setTimeout(() => flashDiv.remove(), 300);
+    }, 5000);
+  }
+
+  // Format numbers with commas
   function formatNumber(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }

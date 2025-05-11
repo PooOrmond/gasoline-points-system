@@ -1,62 +1,351 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fuel Reward System - Login</title>
-    <link rel="stylesheet" href="/static/css/style.css" />
     <link
-      rel="icon"
-      type="image/png"
-      sizes="64x64"
-      href="{{ url_for('static', filename='images/FRS_LOGO_64.png') }}"
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-  </head>
-  <body class="login-page">
-    <div class="login-container">
-      <h1>Fuel Reward System</h1>
-      <p class="subtitle">Sign in to access the points system</p>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #3b82f6;
+        --primary-dark: #2563eb;
+        --text: #1e293b;
+        --text-light: #64748b;
+        --border: #e2e8f0;
+        --white: #ffffff;
+        --bg: #f8fafc;
+      }
 
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %}
-      <div class="flash {{ category }}">{{ message }}</div>
-      {% endfor %} {% endif %} {% endwith %}
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-      <form action="/auth" method="post">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            placeholder="Enter your username"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Enter your password"
-            required
-          />
-        </div>
-        <button type="submit" class="btn">Sign In</button>
-        <div style="text-align: center; margin-top: 1rem">
-          <a
-            href="#"
-            id="forgot-password"
-            style="color: #3498db; text-decoration: none"
-            >Forgot Password?</a
-          >
-        </div>
-      </form>
-    </div>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        color: var(--text);
+        /* Animated gradient background */
+        background: linear-gradient(-45deg, #f0f4f8, #e0e7ff, #f0fdf4, #ecfdf5);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        overflow: hidden;
+      }
 
-    <!-- Forgot Password Modal -->
-    <div
-      id="forgot-modal"
-      style="
+      @keyframes gradientBG {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      /* Floating bubbles animation */
+      .bubbles {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+      }
+
+      .bubble {
+        position: absolute;
+        bottom: -100px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 50%;
+        animation: rise 15s infinite ease-in;
+      }
+
+      .bubble:nth-child(1) {
+        width: 40px;
+        height: 40px;
+        left: 10%;
+        animation-duration: 8s;
+      }
+
+      .bubble:nth-child(2) {
+        width: 20px;
+        height: 20px;
+        left: 20%;
+        animation-duration: 5s;
+        animation-delay: 1s;
+      }
+
+      .bubble:nth-child(3) {
+        width: 50px;
+        height: 50px;
+        left: 35%;
+        animation-duration: 7s;
+        animation-delay: 2s;
+      }
+
+      .bubble:nth-child(4) {
+        width: 80px;
+        height: 80px;
+        left: 50%;
+        animation-duration: 11s;
+        animation-delay: 0s;
+      }
+
+      .bubble:nth-child(5) {
+        width: 35px;
+        height: 35px;
+        left: 55%;
+        animation-duration: 6s;
+        animation-delay: 1s;
+      }
+
+      .bubble:nth-child(6) {
+        width: 45px;
+        height: 45px;
+        left: 65%;
+        animation-duration: 8s;
+        animation-delay: 3s;
+      }
+
+      .bubble:nth-child(7) {
+        width: 25px;
+        height: 25px;
+        left: 75%;
+        animation-duration: 7s;
+        animation-delay: 2s;
+      }
+
+      .bubble:nth-child(8) {
+        width: 80px;
+        height: 80px;
+        left: 80%;
+        animation-duration: 6s;
+        animation-delay: 1s;
+      }
+
+      @keyframes rise {
+        0% {
+          bottom: -100px;
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateX(100px);
+        }
+        100% {
+          bottom: 1080px;
+          transform: translateX(-200px);
+        }
+      }
+
+      .login-container {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transform: translateY(0);
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.6s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .login-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--primary);
+        animation: textColorChange 8s infinite alternate;
+      }
+
+      @keyframes textColorChange {
+        0% {
+          color: var(--primary);
+        }
+        50% {
+          color: #7c3aed;
+        }
+        100% {
+          color: #2563eb;
+        }
+      }
+
+      .subtitle {
+        color: var(--text-light);
+        margin-bottom: 32px;
+        font-size: 0.95rem;
+      }
+
+      .form-group {
+        margin-bottom: 24px;
+        text-align: left;
+        position: relative;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px 12px 44px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        height: 48px;
+        background-color: rgba(255, 255, 255, 0.8);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        transform: scale(1.01);
+      }
+
+      .input-icon {
+        position: absolute;
+        left: 16px;
+        top: 42px;
+        color: var(--text-light);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-group input:focus ~ .input-icon {
+        color: var(--primary);
+        transform: scale(1.1);
+      }
+
+      .btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 8px;
+        font-weight: 500;
+        border: none;
+        background-color: var(--primary);
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+        margin-top: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -60%;
+        width: 200%;
+        height: 200%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: rotate(30deg);
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover::after {
+        left: 100%;
+      }
+
+      .forgot-password {
+        display: inline-block;
+        margin-top: 16px;
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .forgot-password:hover {
+        text-decoration: underline;
+        color: var(--primary-dark);
+      }
+
+      .forgot-password::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 1px;
+        bottom: 0;
+        left: 0;
+        background-color: var(--primary);
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.3s ease;
+      }
+
+      .forgot-password:hover::after {
+        transform: scaleX(1);
+        transform-origin: left;
+      }
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Modal Styles */
+      .modal {
         display: none;
         position: fixed;
         top: 0;
@@ -64,75 +353,149 @@
         width: 100%;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
-        justify-content: center;
+        backdrop-filter: blur(5px);
+        z-index: 1000;
         align-items: center;
-      "
-    >
-      <div
-        style="
-          background: white;
-          padding: 2rem;
-          border-radius: 8px;
-          width: 350px;
-        "
-      >
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .modal.active {
+        display: flex;
+        opacity: 1;
+      }
+
+      .modal-content {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 400px;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+        backdrop-filter: blur(8px);
+      }
+
+      .modal.active .modal-content {
+        transform: translateY(0);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bubbles">
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+    </div>
+
+    <div class="login-container">
+      <h1>Fuel Reward System</h1>
+      <p class="subtitle">Sign in to access your rewards dashboard</p>
+
+      <form action="/auth" method="post">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <i class="fas fa-user input-icon"></i>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter your username"
+            required
+            autocomplete="username"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <i class="fas fa-lock input-icon"></i>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            required
+            autocomplete="current-password"
+          />
+        </div>
+        <button type="submit" class="btn">Sign In</button>
+        <a href="#" id="forgot-password" class="forgot-password"
+          >Forgot Password?</a
+        >
+      </form>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-modal" class="modal">
+      <div class="modal-content">
         <h2>Reset Password</h2>
         <form id="reset-form">
           <div class="form-group">
             <label for="reset-username">Username</label>
+            <i class="fas fa-user input-icon"></i>
             <input
               type="text"
               id="reset-username"
               name="username"
               placeholder="Enter your username"
               required
+              autocomplete="username"
             />
           </div>
           <div class="form-group">
             <label for="new-password">New Password</label>
+            <i class="fas fa-lock input-icon"></i>
             <input
               type="password"
               id="new-password"
               name="new_password"
-              placeholder="Enter new password"
+              placeholder="••••••••"
               required
+              autocomplete="new-password"
             />
           </div>
           <div class="form-group">
             <label for="confirm-password">Confirm Password</label>
+            <i class="fas fa-lock input-icon"></i>
             <input
               type="password"
               id="confirm-password"
               name="confirm_password"
-              placeholder="Confirm new password"
+              placeholder="••••••••"
               required
+              autocomplete="new-password"
             />
           </div>
-          <button type="submit" class="btn">Reset Password</button>
-          <button
-            type="button"
-            id="cancel-reset"
-            class="btn"
-            style="background-color: #95a5a6; margin-top: 0.5rem"
-          >
-            Cancel
+          <button type="submit" class="btn">
+            <i class="fas fa-sync-alt"></i> Reset Password
+          </button>
+          <button type="button" id="cancel-reset" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancel
           </button>
         </form>
       </div>
     </div>
 
     <script>
+      // Forgot Password Modal Functionality
       document
         .getElementById("forgot-password")
         .addEventListener("click", function (e) {
           e.preventDefault();
-          document.getElementById("forgot-modal").style.display = "flex";
+          document.getElementById("forgot-modal").classList.add("active");
         });
 
       document
         .getElementById("cancel-reset")
         .addEventListener("click", function () {
-          document.getElementById("forgot-modal").style.display = "none";
+          document.getElementById("forgot-modal").classList.remove("active");
         });
 
       document
@@ -149,6 +512,14 @@
             return;
           }
 
+          // Show loading state
+          const submitBtn = e.target.querySelector('button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          submitBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Processing...';
+          submitBtn.disabled = true;
+
+          // Here you would typically send the data to your server
           fetch("/reset-password", {
             method: "POST",
             headers: {
@@ -163,15 +534,36 @@
             .then((data) => {
               if (data.success) {
                 alert("Password reset successfully!");
-                document.getElementById("forgot-modal").style.display = "none";
+                document
+                  .getElementById("forgot-modal")
+                  .classList.remove("active");
+                // Clear form
+                document.getElementById("reset-form").reset();
               } else {
                 alert("Error: " + data.message);
               }
             })
             .catch((error) => {
               alert("An error occurred: " + error);
+            })
+            .finally(() => {
+              submitBtn.innerHTML = originalText;
+              submitBtn.disabled = false;
             });
         });
+
+      // Create bubbles with different sizes and positions
+      const bubblesContainer = document.querySelector(".bubbles");
+      for (let i = 0; i < 8; i++) {
+        const bubble = document.createElement("div");
+        bubble.classList.add("bubble");
+        bubble.style.width = `${Math.random() * 60 + 20}px`;
+        bubble.style.height = bubble.style.width;
+        bubble.style.left = `${Math.random() * 100}%`;
+        bubble.style.animationDuration = `${Math.random() * 10 + 5}s`;
+        bubble.style.animationDelay = `${Math.random() * 5}s`;
+        bubblesContainer.appendChild(bubble);
+      }
     </script>
   </body>
 </html>

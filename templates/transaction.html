@@ -1,275 +1,850 @@
-{% extends "admin.html" %} {% block content %}
+{% extends "admin.html" %} {% block page_title %}Transactions{% endblock %}
+{%block content %}
+
+<!-- Transaction Management Container -->
+<div class="transaction-management">
+  <!-- Header Section -->
+  <header class="management-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="icon-transaction"></i> Transaction Management
+      </h1>
+      <p class="page-subtitle">Record and manage fuel transactions</p>
+    </div>
+  </header>
+
+  <!-- Filter Controls -->
+  <div class="filter-controls">
+    <!-- Time Filter Chips -->
+    <form method="get" action="/transactions" class="time-filter-form">
+      <div class="filter-chips">
+        <button
+          type="submit"
+          name="time_filter"
+          value="today"
+          class="filter-chip {% if request.args.get('time_filter')=='today' %}active{% endif %}"
+          data-tooltip="View today's transactions"
+        >
+          <i class="icon-today"></i> Today
+        </button>
+        <button
+          type="submit"
+          name="time_filter"
+          value="this_week"
+          class="filter-chip {% if request.args.get('time_filter')=='this_week' or not request.args.get('time_filter') %}active{% endif %}"
+          data-tooltip="View this week's transactions"
+        >
+          <i class="icon-week"></i> This Week
+        </button>
+        <button
+          type="submit"
+          name="time_filter"
+          value="this_month"
+          class="filter-chip {% if request.args.get('time_filter')=='this_month' %}active{% endif %}"
+          data-tooltip="View this month's transactions"
+        >
+          <i class="icon-month"></i> This Month
+        </button>
+        <button
+          type="submit"
+          name="time_filter"
+          value="last_month"
+          class="filter-chip {% if request.args.get('time_filter')=='last_month' %}active{% endif %}"
+          data-tooltip="View last month's transactions"
+        >
+          <i class="icon-month"></i> Last Month
+        </button>
+        <button
+          type="submit"
+          name="time_filter"
+          value="this_year"
+          class="filter-chip {% if request.args.get('time_filter')=='this_year' %}active{% endif %}"
+          data-tooltip="View this year's transactions"
+        >
+          <i class="icon-year"></i> This Year
+        </button>
+        <button
+          type="submit"
+          name="time_filter"
+          value="all"
+          class="filter-chip {% if request.args.get('time_filter')=='all' %}active{% endif %}"
+          data-tooltip="View all transactions"
+        >
+          <i class="icon-all"></i> All Time
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Transaction Form Card -->
+  <div class="data-card">
+    <form method="post" action="/transactions" id="transaction-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Fuel Type</label>
+          <select name="fuel_type" class="form-control" required>
+            <option value="">Select Fuel</option>
+            <option value="Regular">Regular Gasoline</option>
+            <option value="Premium">Premium Gasoline</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Amount (₱)</label>
+          <input
+            type="number"
+            step="0.01"
+            name="amount"
+            class="form-control"
+            placeholder="Enter amount"
+            required
+            min="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Customer</label>
+          <div class="search-container">
+            <input
+              type="text"
+              id="customer-search"
+              class="form-control"
+              placeholder="Search customers..."
+              autocomplete="off"
+              required
+            />
+            <input type="hidden" name="customer_id" id="customer-id" />
+            <div id="customer-suggestions" class="suggestions-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <i class="icon-add"></i> Record Transaction
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div class="flash-message flash-{{ category }}">
+    <i class="icon-{{ 'success' if category == 'success' else 'error' }}"></i>
+    {{ message }}
+  </div>
+  {% endfor %} {% endif %} {% endwith %}
+
+  <!-- Transactions Table Card -->
+  <div class="data-card">
+    <div class="table-responsive">
+      <table class="transaction-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Date</th>
+            <th>Fuel Type</th>
+            <th>Amount</th>
+            <th>Points</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr data-id="{{ tx[0] }}">
+            <td>
+              {% if tx[7] %} {{ tx[7] }} (CUST-{{ tx[6] }}) {% else %} - {%
+              endif %}
+            </td>
+            <td>{{ tx[5] }}</td>
+            <td>{{ tx[2] }}</td>
+            <td class="amount-cell">
+              ₱<span class="amount-value"
+                >{{ "{:,.2f}".format(tx[3]|float) }}</span
+              >
+              <input
+                type="number"
+                step="0.01"
+                value="{{ tx[3] }}"
+                class="edit-input"
+                style="display: none"
+                min="0"
+              />
+            </td>
+            <td class="points-cell">{{ "{:,.2f}".format(tx[4]|float) }}</td>
+            <td>
+              <div class="action-btns">
+                <button
+                  class="btn btn-secondary"
+                  onclick="toggleEditMode(this)"
+                >
+                  <i class="icon-edit"></i> Edit
+                </button>
+                <button
+                  class="btn btn-confirm"
+                  onclick="updateTransaction(this)"
+                  style="display: none"
+                >
+                  <i class="icon-check"></i> Confirm
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Styles -->
 <style>
-  .form-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-  .form-control {
-    flex: 1;
-    min-width: 150px;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  .btn {
-    padding: 0.75rem 1.5rem;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .btn:hover {
-    background-color: #2980b9;
-  }
-  .btn-edit {
-    background-color: #f39c12;
-  }
-  .btn-edit:hover {
-    background-color: #e67e22;
-  }
-  .btn-confirm {
-    background-color: #27ae60;
-    display: none;
-  }
-  .btn-confirm:hover {
-    background-color: #219653;
+  :root {
+    /* Modern Color Scheme */
+    --primary: #4361ee;
+    --primary-hover: #3a56d4;
+    --primary-light: #ebf0ff;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --success: #4cc9f0;
+    --warning: #f8961e;
+    --error: #ef233c;
+    --dark: #212529;
+    --gray-dark: #343a40;
+    --gray: #6c757d;
+    --gray-light: #e9ecef;
+    --light: #f8f9fa;
+    --white: #ffffff;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
   }
 
-  /* Customer Search Styles */
+  /* Base Styles */
+  .transaction-management {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--dark);
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Header Styles */
+  .management-header {
+    margin-bottom: 2rem;
+  }
+
+  .header-content {
+    margin-bottom: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.9375rem;
+    color: var(--gray);
+    margin: 0;
+  }
+
+  /* Filter Controls */
+  .filter-controls {
+    margin-bottom: 2rem;
+  }
+
+  .time-filter-form {
+    width: 100%;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    background-color: var(--light);
+    color: var(--gray);
+  }
+
+  .filter-chip:hover {
+    background-color: #f1f3f5;
+    transform: translateY(-1px);
+  }
+
+  .filter-chip.active {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .filter-chip i {
+    font-size: 0.875rem;
+  }
+
+  /* Data Card */
+  .data-card {
+    background-color: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+  }
+
+  /* Form Grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    align-items: end;
+  }
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-dark);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    transition: all var(--transition-fast);
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-secondary {
+    background-color: var(--light);
+    color: var(--gray-dark);
+    border: 1px solid var(--gray-light);
+  }
+
+  .btn-secondary:hover {
+    background-color: #f1f3f5;
+    border-color: var(--gray);
+  }
+
+  .btn-confirm {
+    background-color: var(--success);
+    color: var(--white);
+  }
+
+  .btn-confirm:hover {
+    background-color: #3db5d8;
+  }
+
+  /* Search Container */
   .search-container {
     position: relative;
-    flex: 1;
   }
-  .suggestions-box {
+
+  .suggestions-dropdown {
     position: absolute;
-    background: white;
-    border: 1px solid #ddd;
     width: 100%;
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 4px 4px;
+    background: var(--white);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
     display: none;
+    top: 100%;
+    left: 0;
   }
+
   .suggestion-item {
-    padding: 10px;
+    padding: 0.75rem 1rem;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid var(--gray-light);
   }
+
+  .suggestion-item:last-child {
+    border-bottom: none;
+  }
+
   .suggestion-item:hover {
-    background-color: #f5f5f5;
-  }
-  .customer-info {
-    display: flex;
-    justify-content: space-between;
-  }
-  .customer-name {
-    font-weight: 600;
-  }
-  .customer-points {
-    color: #27ae60;
-    font-weight: 500;
+    background-color: var(--primary-light);
   }
 
   /* Table Styles */
-  table {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .transaction-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
   }
-  th,
-  td {
-    padding: 12px 15px;
+
+  .transaction-table th {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    padding: 1rem;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
   }
-  th {
-    background-color: #f8f9fa;
-    font-weight: 500;
+
+  .transaction-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-light);
+    transition: all var(--transition-fast);
   }
+
+  .transaction-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .transaction-table tr:hover td {
+    background-color: var(--primary-light);
+  }
+
+  /* Edit Input */
   .edit-input {
-    width: 80px;
-    padding: 5px;
-    border: 1px solid #3498db;
-    border-radius: 3px;
+    width: 90px;
+    padding: 0.5rem;
+    border: 1px solid var(--gray-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    transition: all var(--transition-fast);
+  }
+
+  .edit-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+
+  /* Action Buttons */
+  .action-btns {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  /* Flash Messages */
+  .flash-message {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeIn 0.3s ease-out;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .flash-success {
+    background-color: rgba(76, 201, 240, 0.1);
+    color: var(--success);
+    border-left: 4px solid var(--success);
+  }
+
+  .flash-error {
+    background-color: rgba(239, 35, 60, 0.1);
+    color: var(--error);
+    border-left: 4px solid var(--error);
+  }
+
+  /* Icons */
+  .icon-transaction,
+  .icon-today,
+  .icon-week,
+  .icon-month,
+  .icon-year,
+  .icon-all,
+  .icon-add,
+  .icon-edit,
+  .icon-check,
+  .icon-success,
+  .icon-error {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .action-btns {
+      flex-direction: column;
+    }
+
+    .filter-chips {
+      gap: 0.5rem;
+    }
+
+    .filter-chip {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+  }
+  /* In transaction.html and redeem.html */
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-chips {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-chip {
+      flex: 0 0 auto;
+    }
   }
 </style>
 
-<form method="post" action="/transactions">
-  <div class="form-row">
-    <select name="fuel_type" class="form-control" required>
-      <option value="">Fuel Type</option>
-      <option value="Regular">Regular Gasoline</option>
-      <option value="Premium">Premium Gasoline</option>
-    </select>
-
-    <input
-      type="number"
-      step="0.01"
-      name="amount"
-      placeholder="Amount (₱)"
-      required
-      class="form-control"
-    />
-
-    <div class="search-container">
-      <input
-        type="text"
-        id="customer-search"
-        class="form-control"
-        placeholder="Input Customer ID"
-        autocomplete="off"
-        required
-      />
-      <input type="hidden" name="customer_id" id="customer-id" />
-      <div id="customer-suggestions" class="suggestions-box"></div>
-    </div>
-
-    <button type="submit" class="btn">Record Transaction</button>
-  </div>
-</form>
-
-<table>
-  <thead>
-    <tr>
-      <th>CUSTOMER</th>
-      <th>DATE</th>
-      <th>FUEL TYPE</th>
-      <th>AMOUNT</th>
-      <th>POINTS</th>
-      <th>ACTIONS</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for tx in transactions %}
-    <tr data-id="{{ tx[0] }}">
-      <td>
-        {% if tx[7] %} {{ tx[7] }} (CUST-{{ tx[6] }}) {% else %} - {% endif %}
-      </td>
-      <td>{{ tx[5] }}</td>
-      <td>{{ tx[2] }}</td>
-      <td class="amount-cell">
-        ₱<span class="amount-value">{{ "{:,.2f}".format(tx[3]|float) }}</span>
-        <input
-          type="number"
-          step="0.01"
-          value="{{ tx[3] }}"
-          class="edit-input"
-          style="display: none"
-        />
-      </td>
-      <td class="points-cell">{{ tx[4] }}</td>
-      <td>
-        <button class="btn btn-edit" onclick="toggleEditMode(this)">
-          Edit
-        </button>
-        <button class="btn btn-confirm" onclick="updateTransaction(this)">
-          Confirm
-        </button>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
+<!-- JavaScript -->
 <script>
-  // Customer Search Functionality
-  document
-    .getElementById("customer-search")
-    .addEventListener("input", function () {
+  // Add SVG icons
+  function addIcons() {
+    const icons = {
+      "icon-transaction": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        </svg>
+      `,
+      "icon-today": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      `,
+      "icon-week": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">W</text>
+        </svg>
+      `,
+      "icon-month": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">M</text>
+        </svg>
+      `,
+      "icon-year": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">Y</text>
+        </svg>
+      `,
+      "icon-all": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="15" y1="3" x2="15" y2="21"></line>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="3" y1="15" x2="21" y2="15"></line>
+        </svg>
+      `,
+      "icon-add": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      `,
+      "icon-edit": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      `,
+      "icon-check": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      `,
+      "icon-success": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      `,
+      "icon-error": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      `,
+    };
+
+    Object.keys(icons).forEach((className) => {
+      document.querySelectorAll(`.${className}`).forEach((el) => {
+        el.innerHTML = icons[className];
+      });
+    });
+  }
+
+  // Customer Search with Debounce
+  let searchTimeout;
+  const searchInput = document.getElementById("customer-search");
+  const suggestionsBox = document.getElementById("customer-suggestions");
+
+  if (searchInput && suggestionsBox) {
+    searchInput.addEventListener("input", function () {
+      clearTimeout(searchTimeout);
       const query = this.value.trim();
-      const suggestionsBox = document.getElementById("customer-suggestions");
 
       if (query.length < 1) {
         suggestionsBox.style.display = "none";
         return;
       }
 
-      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
-        .then((response) => response.json())
-        .then((customers) => {
-          suggestionsBox.innerHTML = "";
+      suggestionsBox.innerHTML =
+        '<div class="suggestion-item">Searching...</div>';
+      suggestionsBox.style.display = "block";
 
-          if (customers.length === 0) {
-            suggestionsBox.style.display = "none";
-            return;
-          }
+      searchTimeout = setTimeout(() => {
+        fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+          .then((response) => response.json())
+          .then((customers) => {
+            suggestionsBox.innerHTML = "";
 
-          customers.forEach((customer) => {
-            const div = document.createElement("div");
-            div.className = "suggestion-item";
-            div.innerHTML = `
-                    <div class="customer-info">
-                        <span class="customer-name">${customer.name} (CUST-${
-              customer.id
-            })</span>
-                        <span class="customer-points">${customer.points.toFixed(
-                          2
-                        )} pts</span>
-                    </div>
-                `;
-            div.addEventListener("click", () => {
-              document.getElementById(
-                "customer-search"
-              ).value = `${customer.name} (CUST-${customer.id})`;
-              document.getElementById("customer-id").value = customer.id;
-              suggestionsBox.style.display = "none";
+            if (customers.length === 0) {
+              suggestionsBox.innerHTML =
+                '<div class="suggestion-item">No customers found</div>';
+              return;
+            }
+
+            customers.forEach((customer) => {
+              const item = document.createElement("div");
+              item.className = "suggestion-item";
+              item.innerHTML = `
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="font-weight: 500;">${customer.name} (CUST-${
+                customer.id
+              })</span>
+                  <span style="color: var(--primary);">${customer.points.toFixed(
+                    2
+                  )} pts</span>
+                </div>
+              `;
+              item.addEventListener("click", () => {
+                searchInput.value = `${customer.name} (CUST-${customer.id})`;
+                document.getElementById("customer-id").value = customer.id;
+                suggestionsBox.style.display = "none";
+              });
+              suggestionsBox.appendChild(item);
             });
-            suggestionsBox.appendChild(div);
+          })
+          .catch(() => {
+            suggestionsBox.innerHTML =
+              '<div class="suggestion-item">Error searching</div>';
           });
-
-          suggestionsBox.style.display = "block";
-        });
+      }, 300);
     });
 
-  // Hide suggestions when clicking elsewhere
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".search-container")) {
-      document.getElementById("customer-suggestions").style.display = "none";
-    }
+    // Close suggestions when clicking outside
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".search-container")) {
+        suggestionsBox.style.display = "none";
+      }
+    });
+  }
+
+  // Form Validation
+  document.querySelectorAll('input[name="amount"]').forEach((input) => {
+    input.addEventListener("input", function () {
+      if (this.value && parseFloat(this.value) < 0) {
+        this.setCustomValidity("Amount cannot be negative");
+        this.style.borderColor = "var(--error)";
+        this.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
+      } else {
+        this.setCustomValidity("");
+        this.style.borderColor = "";
+        this.style.boxShadow = "";
+      }
+    });
   });
 
-  // Transaction Edit Functionality
+  // Form Submission
+  document
+    .getElementById("transaction-form")
+    .addEventListener("submit", function (e) {
+      const amountInput = document.querySelector('input[name="amount"]');
+      if (!amountInput.value || isNaN(parseFloat(amountInput.value))) {
+        e.preventDefault();
+        showFlashMessage("Please enter a valid amount", "error");
+        amountInput.focus();
+        amountInput.style.borderColor = "var(--error)";
+        amountInput.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
+      } else if (parseFloat(amountInput.value) < 0) {
+        e.preventDefault();
+        showFlashMessage("Amount cannot be negative", "error");
+        amountInput.focus();
+        amountInput.style.borderColor = "var(--error)";
+        amountInput.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
+      } else {
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+      }
+    });
+
+  // Edit Mode Toggle
   function toggleEditMode(button) {
     const row = button.closest("tr");
-    const editBtn = row.querySelector(".btn-edit");
+    const editBtn = row.querySelector(".btn-secondary");
     const confirmBtn = row.querySelector(".btn-confirm");
     const amountValue = row.querySelector(".amount-value");
     const amountInput = row.querySelector(".edit-input");
 
-    if (editBtn.textContent === "Edit") {
-      // Enter edit mode
-      editBtn.textContent = "Cancel";
+    if (editBtn.textContent.includes("Edit")) {
+      editBtn.innerHTML = '<i class="icon-close"></i> Cancel';
+      editBtn.style.backgroundColor = "#f1f3f5";
       amountValue.style.display = "none";
       amountInput.style.display = "inline";
       amountInput.focus();
-      confirmBtn.style.display = "inline-block";
+      confirmBtn.style.display = "inline-flex";
+      row.style.backgroundColor = "var(--primary-light)";
     } else {
-      // Cancel edit mode
-      editBtn.textContent = "Edit";
+      editBtn.innerHTML = '<i class="icon-edit"></i> Edit';
+      editBtn.style.backgroundColor = "";
       amountValue.style.display = "inline";
       amountInput.style.display = "none";
       confirmBtn.style.display = "none";
+      row.style.backgroundColor = "";
     }
   }
 
+  // Update Transaction
   function updateTransaction(button) {
     const row = button.closest("tr");
     const transactionId = row.dataset.id;
     const amountInput = row.querySelector(".edit-input");
     const newAmount = parseFloat(amountInput.value);
 
-    if (isNaN(newAmount) || newAmount <= 0) {
-      alert("Please enter a valid amount");
+    if (isNaN(newAmount)) {
+      showFlashMessage("Please enter a valid amount", "error");
+      amountInput.focus();
       return;
     }
+
+    if (newAmount < 0) {
+      showFlashMessage("Amount cannot be negative", "error");
+      amountInput.focus();
+      return;
+    }
+
+    // Loading state
+    button.innerHTML = '<span class="loading-spinner"></span> Updating...';
+    button.disabled = true;
 
     fetch("/update-transaction", {
       method: "POST",
@@ -281,27 +856,145 @@
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          // Update display
-          row.querySelector(".amount-value").textContent = newAmount.toFixed(2);
-          row.querySelector(".points-cell").textContent = data.new_points;
+          // Animate update
+          row.style.transition = "all 0.3s ease";
+          row.style.backgroundColor = "rgba(76, 201, 240, 0.1)";
 
-          // Exit edit mode
-          toggleEditMode(row.querySelector(".btn-edit"));
+          setTimeout(() => {
+            row.querySelector(".amount-value").textContent =
+              newAmount.toFixed(2);
+            row.querySelector(".points-cell").textContent =
+              data.new_points.toFixed(2);
+            toggleEditMode(row.querySelector(".btn-secondary"));
+            showFlashMessage("Transaction updated successfully!", "success");
 
-          // Show success message
-          showFlashMessage("Transaction updated successfully!", "success");
+            setTimeout(() => {
+              row.style.backgroundColor = "";
+            }, 1000);
+          }, 300);
         } else {
           showFlashMessage("Error: " + data.error, "error");
         }
+      })
+      .catch(() => {
+        showFlashMessage("Error updating transaction", "error");
+      })
+      .finally(() => {
+        button.innerHTML = '<i class="icon-check"></i> Confirm';
+        button.disabled = false;
       });
   }
 
+  // Show Flash Message
   function showFlashMessage(message, type) {
     const flashDiv = document.createElement("div");
-    flashDiv.className = `flash ${type}`;
-    flashDiv.textContent = message;
-    document.querySelector(".table-container").prepend(flashDiv);
-    setTimeout(() => flashDiv.remove(), 3000);
+    flashDiv.className = `flash-message flash-${type}`;
+    flashDiv.innerHTML = `
+      <i class="icon-${type === "success" ? "success" : "error"}"></i>
+      ${message}
+    `;
+    flashDiv.style.opacity = "0";
+    flashDiv.style.transform = "translateY(10px)";
+
+    const existingFlash = document.querySelector(".flash-message");
+    if (existingFlash) {
+      existingFlash.remove();
+    }
+
+    const firstCard = document.querySelector(".data-card");
+    firstCard.insertAdjacentElement("beforebegin", flashDiv);
+
+    setTimeout(() => {
+      flashDiv.style.opacity = "1";
+      flashDiv.style.transform = "translateY(0)";
+    }, 10);
+
+    setTimeout(() => {
+      flashDiv.style.opacity = "0";
+      flashDiv.style.transform = "translateY(-10px)";
+      setTimeout(() => flashDiv.remove(), 300);
+    }, 5000);
   }
+
+  // Loading Spinner
+  function createLoadingSpinner() {
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .loading-spinner {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Close icon for edit mode
+  const closeIcon = document.createElement("style");
+  closeIcon.textContent = `
+    .icon-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-close svg {
+      width: 16px;
+      height: 16px;
+    }
+  `;
+  document.head.appendChild(closeIcon);
+
+  // Initialize
+  document.addEventListener("DOMContentLoaded", function () {
+    addIcons();
+    createLoadingSpinner();
+
+    // Add close icon SVG
+    document.querySelectorAll(".icon-close").forEach((el) => {
+      el.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      `;
+    });
+
+    // Add tooltips
+    document.querySelectorAll("[data-tooltip]").forEach((el) => {
+      el.addEventListener("mouseenter", function () {
+        const tooltip = document.createElement("div");
+        tooltip.className = "tooltip";
+        tooltip.textContent = this.getAttribute("data-tooltip");
+        document.body.appendChild(tooltip);
+
+        const rect = this.getBoundingClientRect();
+        tooltip.style.position = "absolute";
+        tooltip.style.left = `${
+          rect.left + rect.width / 2 - tooltip.offsetWidth / 2
+        }px`;
+        tooltip.style.top = `${rect.top - tooltip.offsetHeight - 5}px`;
+        tooltip.style.opacity = "0";
+
+        setTimeout(() => {
+          tooltip.style.opacity = "1";
+          tooltip.style.transform = "translateY(-5px)";
+        }, 10);
+
+        this.addEventListener("mouseleave", function () {
+          tooltip.style.opacity = "0";
+          setTimeout(() => tooltip.remove(), 300);
+        });
+      });
+    });
+  });
 </script>
+
 {% endblock %}

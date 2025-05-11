@@ -682,3 +682,45 @@ select.form-control {
 .modern-table th:nth-child(5) {
   text-align: right;
 }
+/* Mobile-first approach */
+@media (max-width: 576px) {
+  /* Extra small devices */
+  .dashboard-container {
+    padding: 0.5rem;
+  }
+
+  .stats-container {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .nav-tabs {
+    flex-wrap: wrap;
+  }
+
+  .nav-tab {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+  /* Small devices */
+  .stats-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* Minimum touch target size */
+.btn,
+.nav-tab,
+.filter-chip {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 12px 16px;
+}
+
+/* Larger form inputs */
+.form-control {
+  padding: 15px;
+  font-size: 16px; /* Prevents iOS zoom */
+}

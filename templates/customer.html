@@ -1,98 +1,273 @@
-{% extends "admin.html" %} {% block content %}
+{% extends "admin.html" %}
+{% block page_title %}Customers{% endblock %}
+{% block content %}
+
+<!-- Main Container -->
 <div class="customer-management">
-  <div class="customer-header">
-    <h3>Customer Management</h3>
-    <div class="header-actions">
-      <form method="post" action="/customers" class="generate-form">
-        <button type="submit" class="btn btn-primary">
-          <i class="icon-plus"></i> Generate New Customer
-        </button>
-      </form>
-
-      <div class="sort-search-container">
-        <form method="get" action="/customers" class="sort-form">
-          <select name="sort" class="sort-select" onchange="this.form.submit()">
-            <option value="id_desc" {% if request.args.get('sort')=='id_desc' %}selected{% endif %}>Newest First</option>
-            <option value="id_asc" {% if request.args.get('sort')=='id_asc' %}selected{% endif %}>Oldest First</option>
-            <option value="points_desc" {% if request.args.get('sort')=='points_desc' %}selected{% endif %}>Most Points</option>
-            <option value="points_asc" {% if request.args.get('sort')=='points_asc' %}selected{% endif %}>Fewest Points</option>
-            <option value="spent_desc" {% if request.args.get('sort')=='spent_desc' %}selected{% endif %}>Most Spent</option>
-            <option value="spent_asc" {% if request.args.get('sort')=='spent_asc' %}selected{% endif %}>Least Spent</option>
-          </select>
-          <!-- Preserve search query when changing sort -->
-          {% if request.args.get('search') %}
-          <input type="hidden" name="search" value="{{ request.args.get('search') }}">
-          {% endif %}
-        </form>
-
-        <form method="get" action="/customers" class="search-form">
-          <div class="search-container">
-            <input
-              type="text"
-              id="customer-search"
-              name="search"
-              class="search-input"
-              placeholder="Search by customer ID..."
-              autocomplete="off"
-              value="{{ request.args.get('search', '') }}"
-            />
-            <div id="customer-suggestions" class="suggestions-box"></div>
-            <button type="submit" class="search-btn">
-              <i class="icon-search"></i>
-            </button>
-            <!-- Preserve sort when searching -->
-            {% if request.args.get('sort') %}
-            <input type="hidden" name="sort" value="{{ request.args.get('sort') }}">
-            {% endif %}
-          </div>
-        </form>
-      </div>
+  <!-- Header Section -->
+  <header class="management-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="icon-users"></i> Customer Management
+      </h1>
+      <p class="page-subtitle">View and manage your customer database</p>
     </div>
+
+    <!-- Action Controls -->
+    <div class="action-controls">
+      <!-- Generate Customer Button -->
+      <button class="btn btn-generate" type="submit" form="generate-form">
+        <i class="icon-plus"></i> Generate Customer
+      </button>
+      
+      <!-- Search Form -->
+      <form method="get" action="/customers" class="search-form">
+        <div class="search-wrapper">
+          <i class="icon-search"></i>
+          <input type="text" 
+                id="customer-search" 
+                name="search" 
+                placeholder="Search customers..." 
+                value="{{ request.args.get('search', '') }}"
+                autocomplete="off">
+          <button type="button" class="clear-btn" id="clear-search" aria-label="Clear search">
+            <i class="icon-clear"></i>
+          </button>
+          <div id="customer-suggestions" class="suggestions-dropdown"></div>
+        </div>
+        {% if request.args.get('sort') %}
+        <input type="hidden" name="sort" value="{{ request.args.get('sort') }}">
+        {% endif %}
+      </form>
+    </div>
+  </header>
+
+  <!-- Filter/Sort Bar -->
+  <div class="filter-bar">
+    <!-- Sort Dropdown -->
+    <div class="sort-filter">
+      <label for="sort-select">Sort by:</label>
+      <select id="sort-select" name="sort" class="styled-select" onchange="this.form.submit()" form="sort-form">
+        <option value="id_desc" {% if request.args.get('sort')=='id_desc' %}selected{% endif %}>Newest First</option>
+        <option value="id_asc" {% if request.args.get('sort')=='id_asc' %}selected{% endif %}>Oldest First</option>
+        <option value="points_desc" {% if request.args.get('sort')=='points_desc' %}selected{% endif %}>Most Points</option>
+        <option value="points_asc" {% if request.args.get('sort')=='points_asc' %}selected{% endif %}>Fewest Points</option>
+        <option value="spent_desc" {% if request.args.get('sort')=='spent_desc' %}selected{% endif %}>Most Spent</option>
+        <option value="spent_asc" {% if request.args.get('sort')=='spent_asc' %}selected{% endif %}>Least Spent</option>
+      </select>
+    </div>
+    
+    <!-- Hidden Form for Sort -->
+    <form method="get" action="/customers" id="sort-form">
+      {% if request.args.get('search') %}
+      <input type="hidden" name="search" value="{{ request.args.get('search') }}">
+      {% endif %}
+    </form>
+    
+    <!-- Hidden Form for Generate -->
+    <form method="post" action="/customers" id="generate-form"></form>
   </div>
 
-  <div class="customer-table-container">
-    <table class="modern-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Customer Name</th>
-          <th>Registration Date</th>
-          <th>Points Balance</th>
-          <th>Total Spent</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for customer in customers %}
-        <tr>
-          <td class="customer-id">CUST-{{ customer[0] }}</td>
-          <td class="customer-name">{{ customer[1] }}</td>
-          <td class="registration-date">{{ customer[2] }}</td>
-          <td class="points-balance">
-            <span class="points-badge"
-              >{{ "{:,.2f}".format(customer[3]) }}</span
-            >
-          </td>
-          <td class="amount-spent">
-            <span class="amount-badge"
-              >₱{{ "{:,.2f}".format(customer[4]) }}</span
-            >
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Customer Table Card -->
+  <div class="data-card">
+    <div class="table-responsive">
+      <table class="customer-table">
+        <thead>
+          <tr>
+            <th>Customer ID</th>
+            <th>Name</th>
+            <th>Registered</th>
+            <th class="text-right">Points</th>
+            <th class="text-right">Total Spent</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td class="customer-id">CUST-{{ customer[0] }}</td>
+            <td class="customer-name">{{ customer[1] }}</td>
+            <td class="registration-date">{{ customer[2] }}</td>
+            <td class="text-right">
+              <span class="badge badge-points">{{ "{:,.2f}".format(customer[3]) }}</span>
+            </td>
+            <td class="text-right">
+              <span class="badge badge-amount">₱{{ "{:,.2f}".format(customer[4]) }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
+<!-- Styles -->
 <style>
-  .customer-management {
-    padding: 1.5rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  :root {
+    /* Modern Color Scheme */
+    --primary: #4361ee;
+    --primary-hover: #3a56d4;
+    --primary-light: #ebf0ff;
+    --secondary: #7209b7;
+    --accent: #f72585;
+    --success: #4cc9f0;
+    --warning: #f8961e;
+    --error: #ef233c;
+    --dark: #212529;
+    --gray-dark: #343a40;
+    --gray: #6c757d;
+    --gray-light: #e9ecef;
+    --light: #f8f9fa;
+    --white: #ffffff;
   }
 
-  .customer-header {
+  /* Search Wrapper Styles - UPDATED */
+  .search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .search-wrapper input {
+    width: 100%;
+    padding: 0.75rem 2.5rem;
+    border: 1px solid var(--gray-light);
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    background-color: var(--white);
+  }
+
+  .icon-search {
+    position: absolute;
+    left: 1rem;
+    color: var(--gray);
+    z-index: 2;
+    pointer-events: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 1rem;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: var(--gray);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    z-index: 2;
+  }
+
+  .search-wrapper input:not(:placeholder-shown) ~ .clear-btn {
+    opacity: 1;
+  }
+
+  .clear-btn:hover {
+    color: var(--dark);
+  }
+
+  .icon-clear {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .icon-clear svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Base Styles */
+  .customer-management {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--dark);
+  }
+
+  /* Header Styles */
+  .management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  
+  .header-content {
+    flex: 1;
+    min-width: 300px;
+  }
+  
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .page-subtitle {
+    font-size: 0.9375rem;
+    color: var(--gray);
+    margin: 0;
+  }
+  
+  /* Action Controls */
+  .action-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    gap: 0.5rem;
+  }
+  
+  .btn-generate {
+    background-color: var(--primary);
+    color: var(--white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .btn-generate:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Search Form */
+  .search-form {
+    min-width: 280px;
+  }
+  
+  /* Filter Bar */
+  .filter-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -100,373 +275,299 @@
     flex-wrap: wrap;
     gap: 1rem;
   }
-
-  .customer-header h3 {
-    font-size: 1.5rem;
-    color: #2d3748;
-    margin: 0;
-  }
-
-  .header-actions {
+  
+  .sort-filter {
     display: flex;
-    gap: 1rem;
     align-items: center;
+    gap: 0.75rem;
   }
-
-  .search-form {
-    flex: 1;
-    min-width: 250px;
-    max-width: 400px;
+  
+  .sort-filter label {
+    font-size: 0.9375rem;
+    color: var(--gray-dark);
+    font-weight: 500;
   }
-
-  .search-container {
-    position: relative;
-    display: flex;
-  }
-
-  .search-input {
-    width: 100%;
+  
+  .styled-select {
     padding: 0.75rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: all 0.2s;
-    padding-right: 40px;
-  }
-
-  .search-input:focus {
-    outline: none;
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-  }
-
-  .search-btn {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 40px;
-    background: none;
-    border: none;
-    color: #718096;
+    border: 1px solid var(--gray-light);
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    background-color: var(--white);
     cursor: pointer;
-    display: flex;
+    transition: all 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 2.5rem;
+  }
+  
+  .styled-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+  }
+  
+  /* Data Card */
+  .data-card {
+    background-color: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  
+  /* Table Styles */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .customer-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .customer-table th {
+    background-color: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+    text-align: left;
+    position: sticky;
+    top: 0;
+  }
+  
+  .customer-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-light);
+    transition: background-color 0.2s ease;
+  }
+  
+  .customer-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .customer-table tr:hover td {
+    background-color: var(--primary-light);
+  }
+  
+  .text-right {
+    text-align: right;
+  }
+  
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  
+  .badge-points {
+    background-color: rgba(76, 201, 240, 0.1);
+    color: var(--success);
+  }
+  
+  .badge-amount {
+    background-color: rgba(114, 9, 183, 0.1);
+    color: var(--secondary);
+  }
+  
+  /* Suggestions Dropdown */
+  .suggestions-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--white);
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+    display: none;
+    top: 100%;
+    left: 0;
+  }
+  
+  .suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--gray-light);
+  }
+  
+  .suggestion-item:last-child {
+    border-bottom: none;
+  }
+  
+  .suggestion-item:hover {
+    background-color: var(--primary-light);
+  }
+  
+  /* Icons */
+  .icon-users, .icon-plus, .icon-search, .icon-clear {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-
-  .customer-stats {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .stat-card {
-    flex: 1;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    border: 1px solid #edf2f7;
-  }
-
-  .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #2d3748;
-  }
-
-  .stat-label {
-    font-size: 0.875rem;
-    color: #718096;
-  }
-
-  .modern-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .modern-table th {
-    background-color: #f7fafc;
-    color: #4a5568;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
-    padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    text-align: left;
-  }
-
-  .modern-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #edf2f7;
-    font-size: 0.95rem;
-  }
-
-  .modern-table tr:last-child td {
-    border-bottom: none;
-  }
-
-  .modern-table tr:hover td {
-    background-color: #f8fafc;
-  }
-
-  .customer-id {
-    font-weight: 600;
-    color: #4299e1;
-  }
-
-  .customer-name {
-    font-weight: 500;
-  }
-
-  .registration-date {
-    color: #718096;
-    font-size: 0.9rem;
-  }
-
-  .points-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background-color: #ebf8ff;
-    color: #3182ce;
-    border-radius: 9999px;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  .actions {
-    white-space: nowrap;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .view-btn {
-    background-color: #ebf8ff;
-    color: #3182ce;
-  }
-
-  .view-btn:hover {
-    background-color: #bee3f8;
-  }
-
-  .icon-plus,
-  .icon-search,
-  .icon-eye {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    background-size: contain;
-    background-repeat: no-repeat;
-  }
-
-  .icon-plus {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 6v6m0 0v6m0-6h6m-6 0H6' /%3E%3C/svg%3E");
-  }
-
-  .icon-search {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' /%3E%3C/svg%3E");
-  }
-
-  .icon-eye {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' /%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' /%3E%3C/svg%3E");
-  }
-
+  
+  /* Responsive Adjustments */
   @media (max-width: 768px) {
-    .customer-header {
+    .management-header {
       flex-direction: column;
-      align-items: stretch;
-    }
-
-    .header-actions {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .search-form {
-      width: 100%;
-      max-width: none;
-    }
-
-    .customer-stats {
-      flex-direction: column;
-    }
-
-    .modern-table {
-      display: block;
-      overflow-x: auto;
-    }
-  }
-  .search-container {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .suggestions-box {
-    position: absolute;
-    background: white;
-    border: 1px solid #ddd;
-    width: 100%;
-    max-height: 250px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 4px 4px;
-    display: none;
-  }
-
-  .suggestion-item {
-    padding: 10px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-  }
-
-  .customer-info {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .customer-id {
-    font-weight: 600;
-    color: #4299e1;
-  }
-
-  .customer-points {
-    color: #27ae60;
-    font-weight: 500;
-  }
-  .sort-search-container {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-  
-  .sort-form {
-    flex: 0 0 auto;
-  }
-  
-  .sort-select {
-    padding: 0.75rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    background-color: white;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .sort-select:focus {
-    outline: none;
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-  }
-  
-  /* Adjust the search form to work with the new layout */
-  .search-form {
-    flex: 1;
-    min-width: 250px;
-  }
-  
-  @media (max-width: 768px) {
-    .sort-search-container {
-      flex-direction: column;
-      width: 100%;
     }
     
-    .sort-form {
-      width: 100%;
-    }
-    
-    .sort-select {
+    .action-controls {
       width: 100%;
     }
     
     .search-form {
       width: 100%;
-      max-width: none;
+    }
+    
+    .filter-bar {
+      flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>
 
+<!-- JavaScript -->
 <script>
-  // Customer Search Functionality
-  document
-    .getElementById("customer-search")
-    .addEventListener("input", function () {
-      const query = this.value.trim();
-      const suggestionsBox = document.getElementById("customer-suggestions");
+  // Add icons using SVG
+  function addIcons() {
+    const icons = {
+      "icon-clear": `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      `,
+      "icon-users": `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      `,
+      "icon-plus": `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      `,
+      "icon-search": `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      `
+    };
+    
+    Object.keys(icons).forEach(className => {
+      document.querySelectorAll(`.${className}`).forEach(el => {
+        el.innerHTML = icons[className];
+      });
+    });
+  }
 
+  // Customer Search with Debounce
+  let searchTimeout;
+  const searchInput = document.getElementById("customer-search");
+  const suggestionsBox = document.getElementById("customer-suggestions");
+  
+  if (searchInput && suggestionsBox) {
+    searchInput.addEventListener("input", function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
       if (query.length < 1) {
         suggestionsBox.style.display = "none";
         return;
       }
-
-      fetch(`/customer-search?q=${encodeURIComponent(query)}`)
-        .then((response) => response.json())
-        .then((customers) => {
-          suggestionsBox.innerHTML = "";
-
-          if (customers.length === 0) {
-            suggestionsBox.style.display = "none";
-            return;
-          }
-
-          customers.forEach((customer) => {
-            const div = document.createElement("div");
-            div.className = "suggestion-item";
-            div.innerHTML = `
-            <div class="customer-info">
-              <span class="customer-id">Customer ${customer.id}</span>
-              <span class="customer-points">${customer.points.toFixed(
-                2
-              )} pts</span>
-            </div>
-            <div>Registered: ${customer.registration_date}</div>
-          `;
-            div.addEventListener("click", () => {
-              document.getElementById(
-                "customer-search"
-              ).value = `Customer ${customer.id}`;
-              suggestionsBox.style.display = "none";
-              // Submit the form automatically when a suggestion is clicked
-              document.querySelector(".search-form").submit();
+      
+      suggestionsBox.innerHTML = '<div class="suggestion-item">Searching...</div>';
+      suggestionsBox.style.display = "block";
+      
+      searchTimeout = setTimeout(() => {
+        fetch(`/customer-search?q=${encodeURIComponent(query)}`)
+          .then(response => response.json())
+          .then(customers => {
+            suggestionsBox.innerHTML = "";
+            
+            if (customers.length === 0) {
+              suggestionsBox.innerHTML = '<div class="suggestion-item">No customers found</div>';
+              return;
+            }
+            
+            customers.forEach(customer => {
+              const item = document.createElement("div");
+              item.className = "suggestion-item";
+              item.innerHTML = `
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="font-weight: 500;">CUST-${customer.id}</span>
+                  <span style="color: var(--primary);">${customer.points.toFixed(2)} pts</span>
+                </div>
+                <div style="font-size: 0.8125rem; color: var(--gray);">${customer.name}</div>
+              `;
+              item.addEventListener("click", () => {
+                searchInput.value = `CUST-${customer.id}`;
+                suggestionsBox.style.display = "none";
+                document.querySelector(".search-form").submit();
+              });
+              suggestionsBox.appendChild(item);
             });
-            suggestionsBox.appendChild(div);
+          })
+          .catch(() => {
+            suggestionsBox.innerHTML = '<div class="suggestion-item">Error searching</div>';
           });
-
-          suggestionsBox.style.display = "block";
-        });
+      }, 300);
     });
-
-  // Hide suggestions when clicking elsewhere
-  document.addEventListener("click", function (e) {
-    if (!e.target.closest(".search-container")) {
-      document.getElementById("customer-suggestions").style.display = "none";
-    }
-  });
-  document.querySelectorAll(".view-btn").forEach((btn) => {
-    btn.addEventListener("click", function () {
-      const customerId = this.getAttribute("data-id");
-      alert(`View customer CUST-${customerId}`);
+    
+    // Close suggestions when clicking outside
+    document.addEventListener("click", function(e) {
+      if (!e.target.closest(".search-wrapper")) {
+        suggestionsBox.style.display = "none";
+      }
     });
-  });
-
-  function formatNumber(number) {
-    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
+
+  // Clear search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    addIcons();
+    
+    const searchInput = document.getElementById('customer-search');
+    const clearBtn = document.getElementById('clear-search');
+    const searchForm = document.querySelector('.search-form');
+    
+    // Initialize button visibility
+    clearBtn.style.opacity = searchInput.value ? '1' : '0';
+    
+    // Update on input
+    searchInput.addEventListener('input', function() {
+      clearBtn.style.opacity = this.value ? '1' : '0';
+    });
+    
+    // Clear and submit
+    clearBtn.addEventListener('click', function() {
+      searchInput.value = '';
+      searchInput.focus();
+      clearBtn.style.opacity = '0';
+      searchForm.submit();
+    });
+    
+    // Add keyboard support (ESC key clears the input)
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        clearBtn.style.opacity = '0';
+        searchForm.submit();
+      }
+    });
+  });
 </script>
+
 {% endblock %}

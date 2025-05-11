@@ -2,9 +2,15 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
+# Timezone handling
+try:
+    from zoneinfo import ZoneInfo
+    MANILA_TIMEZONE = ZoneInfo('Asia/Manila')
+except (ImportError, Exception):
+    # Fallback for Python < 3.9 or if zoneinfo fails
+    from pytz import timezone
+    MANILA_TIMEZONE = timezone('Asia/Manila')
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -155,45 +161,81 @@ def transactions():
     c = conn.cursor()
     
     if request.method == 'POST':
-        fuel_type = request.form['fuel_type']
-        amount = float(request.form['amount'])
-        customer_id = request.form.get('customer_id')
-        
-        if not customer_id:
-            flash('Customer selection is required', 'error')
-            return redirect(url_for('transactions'))
-        
-        # Calculate points as 1% of amount (₱100 = 1.00 point)
-        points_earned = round(amount * 0.01, 2)
-
-        date = datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y-%m-%d %H:%M:%S')
-        transaction_id = f"TRX-{customer_id}-{datetime.now(ZoneInfo('Asia/Manila')).strftime('%Y%m%d%H%M%S')}"
-        
-        # date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # transaction_id = f"TRX-{customer_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
         try:
-            c.execute("""INSERT INTO transactions 
-                        (ticket_number, fuel_type, amount, points_earned, date, customer_id) 
-                        VALUES (?, ?, ?, ?, ?, ?)""",
-                     (transaction_id, fuel_type, amount, points_earned, date, customer_id))
+            fuel_type = request.form.get('fuel_type', '').strip()
+            amount_str = request.form.get('amount', '').strip()
+            customer_id = request.form.get('customer_id', '').strip()
             
-            c.execute("UPDATE customers SET total_points = total_points + ? WHERE id = ?",
-                     (points_earned, customer_id))
+            # Validate inputs
+            if not fuel_type:
+                flash('Fuel type is required', 'error')
+                return redirect(url_for('transactions'))
+                
+            if not amount_str:
+                flash('Amount is required', 'error')
+                return redirect(url_for('transactions'))
+                
+            try:
+                amount = float(amount_str)
+                if amount < 0:  # Only prevent negative amounts
+                    flash('Amount cannot be negative', 'error')
+                    return redirect(url_for('transactions'))
+            except ValueError:
+                flash('Please enter a valid amount', 'error')
+                return redirect(url_for('transactions'))
+                
+            if not customer_id:
+                flash('Customer selection is required', 'error')
+                return redirect(url_for('transactions'))
             
-            conn.commit()
-            flash(f'Transaction recorded! ₱{amount:.2f} → {points_earned:.2f} points earned', 'success')
+            # Calculate points as 1% of amount (₱100 = 1.00 point)
+            points_earned = round(amount * 0.01, 2)
+            date = datetime.now(MANILA_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')
+            transaction_id = f"TRX-{customer_id}-{datetime.now(MANILA_TIMEZONE).strftime('%Y%m%d%H%M%S')}"
+            
+            try:
+                c.execute("""INSERT INTO transactions 
+                            (ticket_number, fuel_type, amount, points_earned, date, customer_id) 
+                            VALUES (?, ?, ?, ?, ?, ?)""",
+                         (transaction_id, fuel_type, amount, points_earned, date, customer_id))
+                
+                c.execute("UPDATE customers SET total_points = total_points + ? WHERE id = ?",
+                         (points_earned, customer_id))
+                
+                conn.commit()
+                flash(f'Transaction recorded! ₱{amount:.2f} → {points_earned:.2f} points earned', 'success')
+            except Exception as e:
+                conn.rollback()
+                flash(f'Error recording transaction: {str(e)}', 'error')
+            finally:
+                conn.close()
+            return redirect(url_for('transactions'))
+            
         except Exception as e:
-            conn.rollback()
-            flash(f'Error: {str(e)}', 'error')
-        finally:
-            conn.close()
-        return redirect(url_for('transactions'))
+            flash(f'Unexpected error: {str(e)}', 'error')
+            return redirect(url_for('transactions'))
     
-    c.execute('''SELECT t.*, c.name 
-                FROM transactions t
-                LEFT JOIN customers c ON t.customer_id = c.id
-                ORDER BY t.date DESC''')
+    # Handle GET request with time filtering
+    time_filter = request.args.get('time_filter', 'this_week')
+    base_query = '''SELECT t.*, c.name 
+                   FROM transactions t
+                   LEFT JOIN customers c ON t.customer_id = c.id'''
+    
+    # Calculate date ranges
+    if time_filter == 'today':
+        query = f"{base_query} WHERE date(t.date) = date('now') ORDER BY t.date DESC"
+    elif time_filter == 'this_week':
+        query = f"{base_query} WHERE date(t.date) >= date('now', 'weekday 0', '-7 days') ORDER BY t.date DESC"
+    elif time_filter == 'this_month':
+        query = f"{base_query} WHERE strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now') ORDER BY t.date DESC"
+    elif time_filter == 'last_month':
+        query = f"{base_query} WHERE strftime('%Y-%m', t.date) = strftime('%Y-%m', 'now', 'start of month', '-1 month') ORDER BY t.date DESC"
+    elif time_filter == 'this_year':
+        query = f"{base_query} WHERE strftime('%Y', t.date) = strftime('%Y', 'now') ORDER BY t.date DESC"
+    else:  # 'all'
+        query = f"{base_query} ORDER BY t.date DESC"
+    
+    c.execute(query)
     transactions = c.fetchall()
     conn.close()
     return render_template('transaction.html', transactions=transactions)
@@ -208,12 +250,19 @@ def update_transaction():
         transaction_id = request.form['id']
         new_amount = float(request.form['amount'])
         
+        if new_amount < 0:  # Only prevent negative amounts
+            return jsonify({'success': False, 'error': 'Amount cannot be negative'})
+        
         # Recalculate points based on new amount
         new_points = round(new_amount * 0.01, 2)
         
         # Get original transaction data
         c.execute("SELECT points_earned, customer_id FROM transactions WHERE id = ?", (transaction_id,))
-        old_points, customer_id = c.fetchone()
+        result = c.fetchone()
+        if not result:
+            return jsonify({'success': False, 'error': 'Transaction not found'})
+            
+        old_points, customer_id = result
         points_diff = new_points - old_points
         
         # Update transaction
@@ -227,6 +276,8 @@ def update_transaction():
         
         conn.commit()
         return jsonify({'success': True, 'new_points': new_points})
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Invalid amount'})
     except Exception as e:
         conn.rollback()
         return jsonify({'success': False, 'error': str(e)})
@@ -244,10 +295,7 @@ def customers():
         max_id = c.fetchone()[0]
         new_id = 1 if max_id is None else max_id + 1
         
-        # registration_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        registration_date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
-
+        registration_date = datetime.now(MANILA_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')
         c.execute("INSERT INTO customers (id, name, registration_date) VALUES (?, ?, ?)",
                  (new_id, f"Customer {new_id}", registration_date))
         conn.commit()
@@ -255,7 +303,7 @@ def customers():
         return redirect(url_for('customers'))
     
     search = request.args.get('search', '')
-    sort_option = request.args.get('sort', 'id_desc')
+    sort = request.args.get('sort', 'id_desc')  # Get sort parameter with default
     
     # Base query
     query = """
@@ -265,7 +313,7 @@ def customers():
         LEFT JOIN transactions t ON c.id = t.customer_id
     """
     
-    # Add search condition if provided
+    # Handle search
     if search:
         if search.upper().startswith('CUST-'):
             cust_id = search.upper().replace('CUST-', '')
@@ -273,25 +321,23 @@ def customers():
         else:
             query += f" WHERE c.name LIKE '%{search}%'"
     
-    # Group by clause
     query += " GROUP BY c.id, c.name, c.registration_date, c.total_points"
     
-    # Add sorting based on the selected option
-    # Add sorting based on the selected option
-    if sort_option == 'id_desc':
+    # Handle sorting
+    if sort == 'id_desc':
         query += " ORDER BY c.id DESC"
-    elif sort_option == 'id_asc':
+    elif sort == 'id_asc':
         query += " ORDER BY c.id ASC"
-    elif sort_option == 'points_desc':
+    elif sort == 'points_desc':
         query += " ORDER BY c.total_points DESC"
-    elif sort_option == 'points_asc':
+    elif sort == 'points_asc':
         query += " ORDER BY c.total_points ASC"
-    elif sort_option == 'spent_desc':
+    elif sort == 'spent_desc':
         query += " ORDER BY total_amount DESC"
-    elif sort_option == 'spent_asc':
+    elif sort == 'spent_asc':
         query += " ORDER BY total_amount ASC"
     else:
-        query += " ORDER BY c.id DESC"  # Default sorting
+        query += " ORDER BY c.id DESC"  # Default
     
     c.execute(query)
     customers = c.fetchall()
@@ -324,9 +370,7 @@ def redeem():
             flash('Please enter a positive number of points', 'error')
             return redirect(url_for('redeem'))
         
-        #date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        date = datetime.now(ZoneInfo("Asia/Manila")).strftime('%Y-%m-%d %H:%M:%S')
+        date = datetime.now(MANILA_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S')
         peso_value = round(points_to_redeem, 2)
         c.execute("""INSERT INTO redemptions 
                     (customer_id, reward_name, points_redeemed, date) 
@@ -380,18 +424,21 @@ def update_profile():
     new_username = data.get('username')
     current_password = data.get('current_password')
     new_password = data.get('new_password')
-    
+
+    # Validate current password
     if not check_password_hash(ADMIN_CREDENTIALS['password'], current_password):
         return jsonify({'success': False, 'message': 'Current password is incorrect'})
-    
+
+    # Update username if changed
     if new_username != ADMIN_CREDENTIALS['username']:
         ADMIN_CREDENTIALS['username'] = new_username
-    
+
+    # Update password if provided
     if new_password:
-        if len(new_password) < 4:
-            return jsonify({'success': False, 'message': 'Password must be at least 4 characters'})
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'Password must be at least 6 characters'})
         ADMIN_CREDENTIALS['password'] = generate_password_hash(new_password)
-    
+
     return jsonify({
         'success': True,
         'message': 'Profile updated successfully',
