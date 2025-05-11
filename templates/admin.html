@@ -500,10 +500,29 @@
           display: none;
         }
 
-        .btn {
-          padding: 0.75rem 1rem;
-          font-size: 0.875rem;
-          width: 100%;
+        /* New mobile menu styles */
+        .mobile-menu {
+          width: 90%;
+          max-width: 320px;
+          overflow-y: auto;
+          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        }
+
+        .mobile-menu-footer {
+          position: sticky;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.98);
+          padding: 1rem;
+          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+          flex-direction: row;
+          gap: 0.5rem;
+          margin-top: auto;
+        }
+
+        .mobile-menu-footer .btn {
+          width: auto;
+          flex: 1;
+          padding: 0.75rem;
         }
       }
     </style>
