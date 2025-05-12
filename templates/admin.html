@@ -206,6 +206,10 @@
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
       }
 
+      .btn-secondary:hover {
+        background-color: #d1d8e0;
+      }
+
       .btn-logout {
         background-color: var(--error);
         color: white;
@@ -226,75 +230,76 @@
       }
 
       #profile-dropdown {
-        position: absolute;
-        top: 100%;
+        position: fixed;
+        top: 50%;
         right: 0;
+        left: 50%;
+        transform: translate(-50%, -50%);
         background: rgba(255, 255, 255, 0.95);
         border-radius: 16px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        width: 300px;
-        z-index: 100;
+        padding: 2rem;
+        width: 90%;
+        max-width: 400px;
+        z-index: 1000;
         display: none;
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         animation: fadeInUp 0.3s ease-out;
       }
 
-      /* ===== MOBILE MENU ===== */
-      .mobile-menu-toggle {
-        display: none;
-        background: none;
-        border: none;
+      #profile-dropdown h3 {
+        margin-bottom: 1.5rem;
+        text-align: center;
         color: var(--primary);
-        font-size: 1.5rem;
-        cursor: pointer;
-        padding: 0.5rem;
       }
 
-      .mobile-menu-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-      }
-
-      .mobile-menu {
-        position: fixed;
-        top: 0;
-        left: -100%;
-        width: 80%;
-        max-width: 300px;
-        height: 100vh;
-        background: rgba(255, 255, 255, 0.98);
-        padding: 1rem;
-        z-index: 1000;
-        transition: left 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      #profile-form {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.5rem;
       }
 
-      .mobile-menu-header {
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--border);
+      .form-group {
+        position: relative;
         margin-bottom: 1rem;
       }
 
-      .mobile-menu-footer {
-        margin-top: auto;
-        padding: 1rem 0;
-        border-top: 1px solid var(--border);
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px 16px 12px 44px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        height: 48px;
+        background-color: rgba(255, 255, 255, 0.8);
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      }
+
+      .input-icon {
+        position: absolute;
+        left: 16px;
+        top: 42px;
+        color: var(--text-light);
+        font-size: 1rem;
+      }
+
+      .form-actions {
         display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        gap: 1rem;
+        margin-top: 1rem;
       }
 
       /* ===== NAVIGATION ===== */
@@ -358,6 +363,11 @@
         animation: fadeInUp 0.4s ease-out;
       }
 
+      h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+      }
+
       .table-container {
         background: rgba(255, 255, 255, 0.9);
         border-radius: 16px;
@@ -366,37 +376,6 @@
         margin-bottom: 2rem;
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      /* ===== FORMS ===== */
-      .form-group {
-        margin-bottom: 1rem;
-        position: relative;
-      }
-
-      .form-control {
-        width: 100%;
-        padding: 12px 16px 12px 44px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        height: 48px;
-        background-color: rgba(255, 255, 255, 0.8);
-      }
-
-      .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-      }
-
-      .input-icon {
-        position: absolute;
-        left: 16px;
-        top: 42px;
-        color: var(--text-light);
-        font-size: 1rem;
       }
 
       /* ===== MODAL ===== */
@@ -437,6 +416,27 @@
         transform: translateY(0);
       }
 
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-light);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
       /* ===== FLASH MESSAGES ===== */
       .flash {
         padding: 1rem;
@@ -469,6 +469,12 @@
 
         .mobile-menu-toggle {
           display: block;
+          background: none;
+          border: none;
+          color: var(--primary);
+          font-size: 1.5rem;
+          cursor: pointer;
+          padding: 1rem;
         }
 
         .logo-title h1 {
@@ -480,49 +486,42 @@
         }
 
         .profile-section {
-          display: none;
+          gap: 0.5rem;
         }
 
-        .mobile-menu-open .mobile-menu {
-          left: 0;
+        #profile-btn,
+        #logout-btn {
+          padding: 0.5rem;
+          font-size: 0;
         }
 
-        .mobile-menu-open .mobile-menu-overlay {
-          opacity: 1;
-          pointer-events: all;
+        #profile-btn i,
+        #logout-btn i {
+          font-size: 1rem;
+          margin-right: 0;
         }
 
-        .stats-container {
-          grid-template-columns: 1fr;
+        #profile-dropdown {
+          padding: 1.5rem;
+          width: 95%;
+        }
+
+        .form-actions {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .btn {
+          width: 100%;
         }
 
         .nav-tabs {
-          display: none;
+          flex-wrap: wrap;
         }
 
-        /* New mobile menu styles */
-        .mobile-menu {
-          width: 90%;
-          max-width: 320px;
-          overflow-y: auto;
-          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-        }
-
-        .mobile-menu-footer {
-          position: sticky;
-          bottom: 0;
-          background: rgba(255, 255, 255, 0.98);
-          padding: 1rem;
-          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-          flex-direction: row;
-          gap: 0.5rem;
-          margin-top: auto;
-        }
-
-        .mobile-menu-footer .btn {
-          width: auto;
-          flex: 1;
-          padding: 0.75rem;
+        .nav-tab {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
         }
       }
     </style>
@@ -549,7 +548,7 @@
         <div class="modal-body">
           <p>Are you sure you want to log out?</p>
           <div class="modal-actions">
-            <button id="confirm-logout" class="btn btn-danger">Logout</button>
+            <button id="confirm-logout" class="btn btn-logout">Logout</button>
             <button id="cancel-logout" class="btn btn-secondary">Cancel</button>
           </div>
         </div>
@@ -559,9 +558,6 @@
     <div class="dashboard-container">
       <div class="dashboard-header">
         <div class="header-left">
-          <button class="mobile-menu-toggle">
-            <i class="fas fa-bars"></i>
-          </button>
           <div class="logo-title">
             <img
               src="{{ url_for('static', filename='images/FRS_LOGO.png') }}"
@@ -572,93 +568,74 @@
           </div>
         </div>
         <div class="profile-section">
-          <button id="profile-btn" class="btn btn-primary">Profile</button>
-          <div id="profile-dropdown">
-            <h3>Edit Profile</h3>
-            <form id="profile-form">
-              <div class="form-group">
-                <label>Username</label>
-                <i class="fas fa-user input-icon"></i>
-                <input
-                  type="text"
-                  id="profile-username"
-                  class="form-control"
-                  value="{{ ADMIN_CREDENTIALS.username }}"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label>Current Password</label>
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                  type="password"
-                  id="current-password"
-                  class="form-control"
-                  placeholder="Enter current password"
-                  required
-                />
-              </div>
-              <div class="form-group">
-                <label>New Password</label>
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                  type="password"
-                  id="profile-new-password"
-                  class="form-control"
-                  placeholder="Leave blank to keep current"
-                />
-              </div>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Save Changes
-              </button>
-            </form>
-          </div>
+          <button id="profile-btn" class="btn btn-primary">
+            <i class="fas fa-user"></i>
+            <span class="desktop-text">Profile</span>
+          </button>
           <button id="logout-btn" class="btn btn-logout">
-            <i class="fas fa-sign-out-alt"></i> Logout
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="desktop-text">Logout</span>
           </button>
         </div>
       </div>
 
-      <!-- Mobile Menu -->
-      <div class="mobile-menu-overlay"></div>
-      <div class="mobile-menu">
-        <div class="mobile-menu-header">
-          <h3>Menu</h3>
-        </div>
+      <!-- Profile Dropdown Overlay -->
+      <div class="profile-overlay" id="profile-overlay"></div>
 
-        <a
-          href="/dashboard"
-          class="nav-tab {% if request.path == '/dashboard' %}active{% endif %}"
-        >
-          <i class="fas fa-tachometer-alt"></i> Dashboard
-        </a>
-        <a
-          href="/transactions"
-          class="nav-tab {% if request.path == '/transactions' %}active{% endif %}"
-        >
-          <i class="fas fa-exchange-alt"></i> Transactions
-        </a>
-        <a
-          href="/customers"
-          class="nav-tab {% if request.path == '/customers' %}active{% endif %}"
-        >
-          <i class="fas fa-users"></i> Customers
-        </a>
-        <a
-          href="/redeem"
-          class="nav-tab {% if request.path == '/redeem' %}active{% endif %}"
-        >
-          <i class="fas fa-gift"></i> Redemptions
-        </a>
+      <!-- Profile Dropdown -->
+      <div id="profile-dropdown">
+        <h3>Edit Profile</h3>
+        <form id="profile-form">
+          <div class="form-group">
+            <label for="profile-username">Username</label>
+            <div class="input-with-icon">
+              <i class="fas fa-user input-icon"></i>
+              <input
+                type="text"
+                id="profile-username"
+                class="form-control"
+                value="{{ ADMIN_CREDENTIALS.username }}"
+                required
+              />
+            </div>
+          </div>
 
-        <div class="mobile-menu-footer">
-          <button id="mobile-profile-btn" class="btn btn-primary">
-            <i class="fas fa-user"></i> Profile
-          </button>
-          <button id="mobile-logout-btn" class="btn btn-logout">
-            <i class="fas fa-sign-out-alt"></i> Logout
-          </button>
-        </div>
+          <div class="form-group">
+            <label for="current-password">Current Password</label>
+            <div class="input-with-icon">
+              <i class="fas fa-lock input-icon"></i>
+              <input
+                type="password"
+                id="current-password"
+                class="form-control"
+                placeholder="Enter current password"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="profile-new-password">New Password</label>
+            <div class="input-with-icon">
+              <i class="fas fa-lock input-icon"></i>
+              <input
+                type="password"
+                id="profile-new-password"
+                class="form-control"
+                placeholder="Leave blank to keep current"
+              />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button type="button" id="close-profile" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+          </div>
+        </form>
       </div>
 
       <h2>{% block page_title %}Dashboard{% endblock %}</h2>
@@ -723,9 +700,6 @@
         // Create bubbles
         initBubbles();
 
-        // Initialize mobile menu
-        initMobileMenu();
-
         // Initialize profile dropdown
         initProfileDropdown();
 
@@ -751,62 +725,28 @@
         }
       }
 
-      // ===== MOBILE MENU =====
-      function initMobileMenu() {
-        const mobileMenuToggle = document.querySelector(".mobile-menu-toggle");
-        const mobileMenuOverlay = document.querySelector(
-          ".mobile-menu-overlay"
-        );
-
-        // Toggle menu
-        mobileMenuToggle.addEventListener("click", () => {
-          document.body.classList.toggle("mobile-menu-open");
-        });
-
-        // Close menu when clicking overlay
-        mobileMenuOverlay.addEventListener("click", () => {
-          document.body.classList.remove("mobile-menu-open");
-        });
-
-        // Close menu when clicking a nav tab
-        document.querySelectorAll(".mobile-menu .nav-tab").forEach((tab) => {
-          tab.addEventListener("click", () => {
-            document.body.classList.remove("mobile-menu-open");
-          });
-        });
-
-        // Mobile profile button
-        document
-          .getElementById("mobile-profile-btn")
-          .addEventListener("click", () => {
-            document.body.classList.remove("mobile-menu-open");
-            document.getElementById("profile-dropdown").style.display = "block";
-          });
-
-        // Mobile logout button
-        document
-          .getElementById("mobile-logout-btn")
-          .addEventListener("click", () => {
-            document.body.classList.remove("mobile-menu-open");
-            document.getElementById("logout-modal").classList.add("active");
-          });
-      }
-
       // ===== PROFILE DROPDOWN =====
       function initProfileDropdown() {
         const profileBtn = document.getElementById("profile-btn");
         const profileDropdown = document.getElementById("profile-dropdown");
+        const profileOverlay = document.getElementById("profile-overlay");
+        const closeProfile = document.getElementById("close-profile");
+
+        function toggleProfileDropdown() {
+          const isVisible = profileDropdown.style.display === "block";
+          profileDropdown.style.display = isVisible ? "none" : "block";
+          profileOverlay.style.display = isVisible ? "none" : "block";
+        }
 
         profileBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          profileDropdown.style.display =
-            profileDropdown.style.display === "block" ? "none" : "block";
+          toggleProfileDropdown();
         });
 
-        document.addEventListener("click", () => {
-          profileDropdown.style.display = "none";
-        });
+        closeProfile.addEventListener("click", toggleProfileDropdown);
+        profileOverlay.addEventListener("click", toggleProfileDropdown);
 
+        // Prevent dropdown from closing when clicking inside it
         profileDropdown.addEventListener("click", (e) => {
           e.stopPropagation();
         });
@@ -820,6 +760,10 @@
         const cancelLogout = document.getElementById("cancel-logout");
         const modalClose = document.querySelector(".modal-close");
 
+        function closeModal() {
+          logoutModal.classList.remove("active");
+        }
+
         logoutBtn.addEventListener("click", () => {
           logoutModal.classList.add("active");
         });
@@ -827,8 +771,6 @@
         confirmLogout.addEventListener("click", () => {
           window.location.href = "/logout";
         });
-
-        const closeModal = () => logoutModal.classList.remove("active");
 
         cancelLogout.addEventListener("click", closeModal);
         modalClose.addEventListener("click", closeModal);
@@ -840,50 +782,52 @@
 
       // ===== PROFILE FORM =====
       function initProfileForm() {
-        document
-          .getElementById("profile-form")
-          .addEventListener("submit", function (e) {
-            e.preventDefault();
+        const profileForm = document.getElementById("profile-form");
 
-            const username = document.getElementById("profile-username").value;
-            const currentPassword =
-              document.getElementById("current-password").value;
-            const newPassword = document.getElementById(
-              "profile-new-password"
-            ).value;
+        profileForm.addEventListener("submit", function (e) {
+          e.preventDefault();
 
-            if (!currentPassword) {
-              showFlashMessage("Current password is required", "error");
-              return;
-            }
+          const username = document.getElementById("profile-username").value;
+          const currentPassword =
+            document.getElementById("current-password").value;
+          const newPassword = document.getElementById(
+            "profile-new-password"
+          ).value;
 
-            fetch("/update-profile", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                username: username,
-                current_password: currentPassword,
-                new_password: newPassword,
-              }),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.success) {
-                  showFlashMessage("Profile updated successfully!", "success");
-                  document.getElementById("profile-dropdown").style.display =
-                    "none";
-                  if (data.new_username) {
-                    document.getElementById("profile-username").value =
-                      data.new_username;
-                  }
-                } else {
-                  showFlashMessage("Error: " + data.message, "error");
+          if (!currentPassword) {
+            showFlashMessage("Current password is required", "error");
+            return;
+          }
+
+          fetch("/update-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: username,
+              current_password: currentPassword,
+              new_password: newPassword,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                showFlashMessage("Profile updated successfully!", "success");
+                document.getElementById("profile-dropdown").style.display =
+                  "none";
+                document.getElementById("profile-overlay").style.display =
+                  "none";
+                if (data.new_username) {
+                  document.getElementById("profile-username").value =
+                    data.new_username;
                 }
-              })
-              .catch((error) => {
-                showFlashMessage("An error occurred: " + error, "error");
-              });
-          });
+              } else {
+                showFlashMessage("Error: " + data.message, "error");
+              }
+            })
+            .catch((error) => {
+              showFlashMessage("An error occurred: " + error, "error");
+            });
+        });
       }
 
       // ===== UTILITIES =====

@@ -1,7 +1,5 @@
-{% extends "admin.html" %} {% block page_title %}Transactions{% endblock %}
-{%block content %}
-
-<!-- Transaction Management Container -->
+{% extends "admin.html" %} {% block page_title %}Transactions{% endblock %} {%
+block content %}
 <div class="transaction-management">
   <!-- Header Section -->
   <header class="management-header">
@@ -15,14 +13,14 @@
 
   <!-- Filter Controls -->
   <div class="filter-controls">
-    <!-- Time Filter Chips -->
     <form method="get" action="/transactions" class="time-filter-form">
       <div class="filter-chips">
+        {% set time_filter = request.args.get('time_filter', 'this_week') %}
         <button
           type="submit"
           name="time_filter"
           value="today"
-          class="filter-chip {% if request.args.get('time_filter')=='today' %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'today' %}active{% endif %}"
           data-tooltip="View today's transactions"
         >
           <i class="icon-today"></i> Today
@@ -31,7 +29,7 @@
           type="submit"
           name="time_filter"
           value="this_week"
-          class="filter-chip {% if request.args.get('time_filter')=='this_week' or not request.args.get('time_filter') %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'this_week' %}active{% endif %}"
           data-tooltip="View this week's transactions"
         >
           <i class="icon-week"></i> This Week
@@ -40,7 +38,7 @@
           type="submit"
           name="time_filter"
           value="this_month"
-          class="filter-chip {% if request.args.get('time_filter')=='this_month' %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'this_month' %}active{% endif %}"
           data-tooltip="View this month's transactions"
         >
           <i class="icon-month"></i> This Month
@@ -49,7 +47,7 @@
           type="submit"
           name="time_filter"
           value="last_month"
-          class="filter-chip {% if request.args.get('time_filter')=='last_month' %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'last_month' %}active{% endif %}"
           data-tooltip="View last month's transactions"
         >
           <i class="icon-month"></i> Last Month
@@ -58,7 +56,7 @@
           type="submit"
           name="time_filter"
           value="this_year"
-          class="filter-chip {% if request.args.get('time_filter')=='this_year' %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'this_year' %}active{% endif %}"
           data-tooltip="View this year's transactions"
         >
           <i class="icon-year"></i> This Year
@@ -67,7 +65,7 @@
           type="submit"
           name="time_filter"
           value="all"
-          class="filter-chip {% if request.args.get('time_filter')=='all' %}active{% endif %}"
+          class="filter-chip {% if time_filter == 'all' %}active{% endif %}"
           data-tooltip="View all transactions"
         >
           <i class="icon-all"></i> All Time
@@ -78,65 +76,57 @@
 
   <!-- Transaction Form Card -->
   <div class="data-card">
-    <div class="table-responsive">
-      <table class="transaction-table">
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Fuel Type</th>
-            <th>Amount</th>
-            <th>Points</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for tx in transactions %}
-          <tr data-id="{{ tx[0] }}">
-            <td data-label="Customer">
-              {% if tx[7] %}{{ tx[7] }} (CUST-{{ tx[6] }}){% else %}-{% endif %}
-            </td>
-            <td data-label="Date">{{ tx[5] }}</td>
-            <td data-label="Fuel Type">{{ tx[2] }}</td>
-            <td class="amount-cell" data-label="Amount">
-              ₱<span class="amount-value"
-                >{{ "{:,.2f}".format(tx[3]|float) }}</span
-              >
-              <input
-                type="number"
-                step="0.01"
-                value="{{ tx[3] }}"
-                class="edit-input"
-                style="display: none"
-                min="0"
-              />
-            </td>
-            <td class="points-cell" data-label="Points">
-              {{ "{:,.2f}".format(tx[4]|float) }}
-            </td>
-            <td data-label="Actions">
-              <div class="action-btns">
-                <button
-                  class="btn btn-secondary"
-                  onclick="toggleEditMode(this)"
-                >
-                  <i class="icon-edit"></i> <span class="btn-text">Edit</span>
-                </button>
-                <button
-                  class="btn btn-confirm"
-                  onclick="updateTransaction(this)"
-                  style="display: none"
-                >
-                  <i class="icon-check"></i>
-                  <span class="btn-text">Confirm</span>
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <form method="post" action="/transactions" id="transaction-form">
+      <form method="post" action="/transactions" id="transaction-form" novalidate>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Fuel Type</label>
+          <select name="fuel_type" class="form-control" required>
+            <option value="">Select Fuel</option>
+            <option value="Regular">Regular Gasoline</option>
+            <option value="Premium">Premium Gasoline</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Amount (₱)</label>
+          <input
+            type="number"
+            step="0.01"
+            name="amount"
+            class="form-control"
+            placeholder="Enter amount"
+            required
+            min="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Customer</label>
+          <div class="search-container">
+            <input
+              type="text"
+              id="customer-search"
+              class="form-control"
+              placeholder="Search customers..."
+              autocomplete="off"
+              required
+              aria-autocomplete="list"
+              aria-controls="customer-suggestions"
+              aria-expanded="false"
+            />
+            <input type="hidden" name="customer_id" id="customer-id" />
+            <div id="customer-suggestions" class="suggestions-dropdown"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <i class="icon-add"></i> Record Transaction
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 
   <!-- Flash Messages -->
@@ -154,24 +144,30 @@
       <table class="transaction-table">
         <thead>
           <tr>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Fuel Type</th>
-            <th>Amount</th>
-            <th>Points</th>
-            <th>Actions</th>
+            <th class="customer-col">Customer</th>
+            <th class="date-col">Date</th>
+            <th class="fuel-col">Fuel Type</th>
+            <th class="amount-col">Amount</th>
+            <th class="points-col">Points</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for tx in transactions %}
           <tr data-id="{{ tx[0] }}">
-            <td data-label="Customer">
-              {% if tx[7] %}{{ tx[7] }}{% if tx[6] %} (CUST-{{ tx[6] }}){% endif
-              %}{% else %}-{% endif %}
+            <td class="customer-col" data-label="Customer">
+              {% if tx[7] %}
+              <span class="mobile-label">Customer:</span>
+              {{ tx[7] }} (CUST-{{ tx[6] }}) {% else %} - {% endif %}
             </td>
-            <td data-label="Date">{{ tx[5] }}</td>
-            <td data-label="Fuel Type">{{ tx[2] }}</td>
-            <td class="amount-cell" data-label="Amount">
+            <td class="date-col" data-label="Date">
+              <span class="mobile-label">Date:</span> {{ tx[5] }}
+            </td>
+            <td class="fuel-col" data-label="Fuel Type">
+              <span class="mobile-label">Fuel Type:</span> {{ tx[2] }}
+            </td>
+            <td class="amount-cell amount-col" data-label="Amount">
+              <span class="mobile-label">Amount:</span>
               ₱<span class="amount-value"
                 >{{ "{:,.2f}".format(tx[3]|float) }}</span
               >
@@ -184,10 +180,11 @@
                 min="0"
               />
             </td>
-            <td class="points-cell" data-label="Points">
+            <td class="points-cell points-col" data-label="Points">
+              <span class="mobile-label">Points:</span>
               {{ "{:,.2f}".format(tx[4]|float) }}
             </td>
-            <td data-label="Actions">
+            <td class="actions-col" data-label="Actions">
               <div class="action-btns">
                 <button
                   class="btn btn-secondary"
@@ -213,10 +210,9 @@
   </div>
 </div>
 
-<!-- Styles -->
 <style>
   :root {
-    /* Modern Color Scheme */
+    /* Color Scheme */
     --primary: #4361ee;
     --primary-hover: #3a56d4;
     --primary-light: #ebf0ff;
@@ -257,7 +253,6 @@
     animation: fadeIn 0.4s ease-out;
   }
 
-  /* Animations */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -269,24 +264,9 @@
     }
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateX(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
   /* Header Styles */
   .management-header {
     margin-bottom: 2rem;
-  }
-
-  .header-content {
-    margin-bottom: 1rem;
   }
 
   .page-title {
@@ -308,10 +288,6 @@
   /* Filter Controls */
   .filter-controls {
     margin-bottom: 2rem;
-  }
-
-  .time-filter-form {
-    width: 100%;
   }
 
   .filter-chips {
@@ -346,10 +322,6 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .filter-chip i {
-    font-size: 0.875rem;
-  }
-
   /* Data Card */
   .data-card {
     background-color: var(--white);
@@ -366,10 +338,6 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     align-items: end;
-  }
-
-  .form-group {
-    margin-bottom: 0;
   }
 
   .form-label {
@@ -468,10 +436,6 @@
     border-bottom: 1px solid var(--gray-light);
   }
 
-  .suggestion-item:last-child {
-    border-bottom: none;
-  }
-
   .suggestion-item:hover {
     background-color: var(--primary-light);
   }
@@ -503,10 +467,6 @@
     transition: all var(--transition-fast);
   }
 
-  .transaction-table tr:last-child td {
-    border-bottom: none;
-  }
-
   .transaction-table tr:hover td {
     background-color: var(--primary-light);
   }
@@ -517,14 +477,6 @@
     padding: 0.5rem;
     border: 1px solid var(--gray-light);
     border-radius: var(--radius-sm);
-    font-size: 0.9375rem;
-    transition: all var(--transition-fast);
-  }
-
-  .edit-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
   }
 
   /* Action Buttons */
@@ -545,55 +497,21 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .flash-success {
+  .flash-success,
+  .flash-message.flash-success {
     background-color: rgba(76, 201, 240, 0.1);
     color: var(--success);
     border-left: 4px solid var(--success);
   }
 
-  .flash-error {
+  .flash-error,
+  .flash-message.flash-error {
     background-color: rgba(239, 35, 60, 0.1);
     color: var(--error);
     border-left: 4px solid var(--error);
   }
 
-  /* Icons */
-  .icon-transaction,
-  .icon-today,
-  .icon-week,
-  .icon-month,
-  .icon-year,
-  .icon-all,
-  .icon-add,
-  .icon-edit,
-  .icon-check,
-  .icon-success,
-  .icon-error {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .action-btns {
-      flex-direction: column;
-    }
-
-    .filter-chips {
-      gap: 0.5rem;
-    }
-
-    .filter-chip {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.8125rem;
-    }
-  }
-  /* In transaction.html and redeem.html */
+  /* Mobile Styles */
   @media (max-width: 768px) {
     .form-grid {
       grid-template-columns: 1fr;
@@ -602,17 +520,10 @@
     .filter-chips {
       overflow-x: auto;
       padding-bottom: 0.5rem;
-      -webkit-overflow-scrolling: touch;
     }
 
-    .filter-chip {
-      flex: 0 0 auto;
-    }
-  }
-  @media (max-width: 768px) {
     .transaction-table {
-      width: 100%;
-      border: 0;
+      display: block;
     }
 
     .transaction-table thead {
@@ -622,270 +533,101 @@
     .transaction-table tr {
       display: block;
       margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      background: white;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem;
     }
 
     .transaction-table td {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #f1f5f9;
-      text-align: right;
-      width: 100%;
-      box-sizing: border-box;
+      padding: 0.75rem 0.5rem;
     }
 
-    .transaction-table td:last-child {
-      border-bottom: 0;
-    }
-
-    .transaction-table td::before {
-      content: attr(data-label);
+    .mobile-label {
       font-weight: 600;
-      color: #343a40;
-      margin-right: auto;
-      text-align: left;
-      width: 40%;
+      margin-right: 0.5rem;
     }
 
-    /* Specific adjustments for amount and points cells */
-    .amount-cell,
-    .points-cell {
-      justify-content: space-between;
+    .btn-text {
+      font-size: 0; /* Hide text but keep accessible */
+    }
+    .btn i {
+      margin-right: 0;
     }
 
-    /* Action buttons styling to match customer.html */
     .action-btns {
-      width: 100%;
       justify-content: flex-end;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
     }
 
     .action-btns .btn {
       padding: 0.5rem;
-      font-size: 0.8rem;
-      min-width: auto;
-    }
-
-    /* Edit input field styling */
-    .edit-input {
-      width: 100% !important;
-      max-width: 120px;
-      padding: 0.5rem;
-    }
-
-    /* Ensure no horizontal scrolling */
-    .transaction-table,
-    .transaction-table tr,
-    .transaction-table td {
-      max-width: 100%;
-      overflow: hidden;
     }
   }
 
-  /* Global no-horizontal-scroll rule from style.css */
-  html,
-  body {
-    overflow-x: hidden;
-    max-width: 100%;
-  }
+  /* Desktop Column Widths */
+  @media (min-width: 769px) {
+    .customer-col {
+      width: 25%;
+    }
+    .date-col {
+      width: 15%;
+    }
+    .fuel-col {
+      width: 15%;
+    }
+    .amount-col {
+      width: 15%;
+    }
+    .points-col {
+      width: 15%;
+    }
+    .actions-col {
+      width: 15%;
+    }
 
-  /* Table responsive container - matches customer.html */
-  .table-responsive {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Desktop styles - matching customer.html */
-  .transaction-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .transaction-table th {
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 10;
-    font-weight: 600;
-    color: #212529;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .transaction-table td {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.95rem;
-  }
-
-  .transaction-table tr:last-child td {
-    border-bottom: none;
-  }
-
-  .transaction-table tr:hover td {
-    background-color: #f8fafc;
-  }
-
-  /* Action buttons container */
-  .action-btns {
-    display: flex;
-    gap: 0.5rem;
+    .mobile-label {
+      display: none;
+    }
   }
 </style>
 
-<!-- JavaScript -->
 <script>
-  // Mobile-specific adjustments - matches customer.html behavior
-  function adjustForMobile() {
-    if (window.innerWidth <= 768) {
-      // Hide button text on mobile to save space
-      document.querySelectorAll(".btn-text").forEach((el) => {
-        el.style.display = "none";
-      });
+  // SVG Icons
+  const icons = {
+    "icon-transaction": `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`,
+    "icon-today": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+    "icon-week": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">W</text></svg>`,
+    "icon-month": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">M</text></svg>`,
+    "icon-year": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">Y</text></svg>`,
+    "icon-all": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>`,
+    "icon-add": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+    "icon-edit": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+    "icon-check": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    "icon-success": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+    "icon-error": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+    "icon-close": `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+  };
 
-      // Make action buttons more compact
-      document.querySelectorAll(".action-btns .btn").forEach((btn) => {
-        btn.style.padding = "0.5rem";
-        btn.style.minWidth = "auto";
-        btn.style.fontSize = "0.8rem";
-      });
-
-      // Ensure content fits without horizontal scrolling
-      document.querySelectorAll(".transaction-table td").forEach((cell) => {
-        cell.style.overflow = "hidden";
-        cell.style.textOverflow = "ellipsis";
-        cell.style.maxWidth = "100%";
-      });
-    } else {
-      // Restore desktop styles
-      document.querySelectorAll(".btn-text").forEach((el) => {
-        el.style.display = "inline";
-      });
-
-      document.querySelectorAll(".action-btns .btn").forEach((btn) => {
-        btn.style.padding = "";
-        btn.style.minWidth = "";
-        btn.style.fontSize = "";
-      });
-    }
-  }
-
-  // Initialize and watch for resize - matches customer.html approach
-  document.addEventListener("DOMContentLoaded", function () {
-    adjustForMobile();
-    window.addEventListener("resize", adjustForMobile);
-  });
-  // Add SVG icons
-  function addIcons() {
-    const icons = {
-      "icon-transaction": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="8" x2="12" y2="16"></line>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        </svg>
-      `,
-      "icon-today": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-      `,
-      "icon-week": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">W</text>
-        </svg>
-      `,
-      "icon-month": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">M</text>
-        </svg>
-      `,
-      "icon-year": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-          <text x="12" y="18" font-size="8" text-anchor="middle" fill="currentColor">Y</text>
-        </svg>
-      `,
-      "icon-all": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="3" x2="9" y2="21"></line>
-          <line x1="15" y1="3" x2="15" y2="21"></line>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="3" y1="15" x2="21" y2="15"></line>
-        </svg>
-      `,
-      "icon-add": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      `,
-      "icon-edit": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-      `,
-      "icon-check": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      `,
-      "icon-success": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      `,
-      "icon-error": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="8" x2="12" y2="12"></line>
-          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-        </svg>
-      `,
-    };
-
-    Object.keys(icons).forEach((className) => {
+  // Initialize icons
+  function initIcons() {
+    Object.entries(icons).forEach(([className, svg]) => {
       document.querySelectorAll(`.${className}`).forEach((el) => {
-        el.innerHTML = icons[className];
+        el.innerHTML = svg;
       });
     });
   }
 
   // Customer Search with Debounce
-  let searchTimeout;
-  const searchInput = document.getElementById("customer-search");
-  const suggestionsBox = document.getElementById("customer-suggestions");
+  function initCustomerSearch() {
+    const searchInput = document.getElementById("customer-search");
+    const suggestionsBox = document.getElementById("customer-suggestions");
 
-  if (searchInput && suggestionsBox) {
+    if (!searchInput || !suggestionsBox) return;
+
+    let searchTimeout;
+
     searchInput.addEventListener("input", function () {
       clearTimeout(searchTimeout);
       const query = this.value.trim();
@@ -948,43 +690,40 @@
   }
 
   // Form Validation
-  document.querySelectorAll('input[name="amount"]').forEach((input) => {
-    input.addEventListener("input", function () {
-      if (this.value && parseFloat(this.value) < 0) {
-        this.setCustomValidity("Amount cannot be negative");
-        this.style.borderColor = "var(--error)";
-        this.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
-      } else {
-        this.setCustomValidity("");
-        this.style.borderColor = "";
-        this.style.boxShadow = "";
-      }
+  function initFormValidation() {
+    document.querySelectorAll('input[name="amount"]').forEach((input) => {
+      input.addEventListener("blur", function () {
+        if (this.value && parseFloat(this.value) <= 0) {
+          this.setCustomValidity("Amount must be greater than 0");
+          this.style.borderColor = "var(--error)";
+        } else {
+          this.setCustomValidity("");
+          this.style.borderColor = "";
+        }
+      });
     });
-  });
 
-  // Form Submission
-  document
-    .getElementById("transaction-form")
-    .addEventListener("submit", function (e) {
-      const amountInput = document.querySelector('input[name="amount"]');
-      if (!amountInput.value || isNaN(parseFloat(amountInput.value))) {
-        e.preventDefault();
-        showFlashMessage("Please enter a valid amount", "error");
-        amountInput.focus();
-        amountInput.style.borderColor = "var(--error)";
-        amountInput.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
-      } else if (parseFloat(amountInput.value) < 0) {
-        e.preventDefault();
-        showFlashMessage("Amount cannot be negative", "error");
-        amountInput.focus();
-        amountInput.style.borderColor = "var(--error)";
-        amountInput.style.boxShadow = "0 0 0 3px rgba(239, 35, 60, 0.1)";
-      } else {
-        const btn = document.getElementById("submit-btn");
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
-      }
-    });
+    document
+      .getElementById("transaction-form")
+      .addEventListener("submit", function (e) {
+        const amountInput = document.querySelector('input[name="amount"]');
+        if (!amountInput.value || isNaN(parseFloat(amountInput.value))) {
+          e.preventDefault();
+          showFlashMessage("Please enter a valid amount", "error");
+          amountInput.focus();
+          amountInput.style.borderColor = "var(--error)";
+        } else if (parseFloat(amountInput.value) < 0) {
+          e.preventDefault();
+          showFlashMessage("Amount cannot be negative", "error");
+          amountInput.focus();
+          amountInput.style.borderColor = "var(--error)";
+        } else {
+          const btn = document.getElementById("submit-btn");
+          btn.disabled = true;
+          btn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+        }
+      });
+  }
 
   // Edit Mode Toggle
   function toggleEditMode(button) {
@@ -1037,15 +776,12 @@
 
     fetch("/update-transaction", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `id=${transactionId}&amount=${newAmount}`,
     })
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          // Animate update
           row.style.transition = "all 0.3s ease";
           row.style.backgroundColor = "rgba(76, 201, 240, 0.1)";
 
@@ -1072,6 +808,9 @@
         button.innerHTML = '<i class="icon-check"></i> Confirm';
         button.disabled = false;
       });
+    button.innerHTML = '<span class="loading-spinner"></span> Updating...';
+    button.disabled = true;
+    row.querySelector(".btn-secondary").disabled = true;
   }
 
   // Show Flash Message
@@ -1086,9 +825,7 @@
     flashDiv.style.transform = "translateY(10px)";
 
     const existingFlash = document.querySelector(".flash-message");
-    if (existingFlash) {
-      existingFlash.remove();
-    }
+    if (existingFlash) existingFlash.remove();
 
     const firstCard = document.querySelector(".data-card");
     firstCard.insertAdjacentElement("beforebegin", flashDiv);
@@ -1106,7 +843,7 @@
   }
 
   // Loading Spinner
-  function createLoadingSpinner() {
+  function initLoadingSpinner() {
     const style = document.createElement("style");
     style.textContent = `
       @keyframes spin {
@@ -1126,64 +863,12 @@
     document.head.appendChild(style);
   }
 
-  // Close icon for edit mode
-  const closeIcon = document.createElement("style");
-  closeIcon.textContent = `
-    .icon-close {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .icon-close svg {
-      width: 16px;
-      height: 16px;
-    }
-  `;
-  document.head.appendChild(closeIcon);
-
-  // Initialize
+  // Initialize everything
   document.addEventListener("DOMContentLoaded", function () {
-    addIcons();
-    createLoadingSpinner();
-
-    // Add close icon SVG
-    document.querySelectorAll(".icon-close").forEach((el) => {
-      el.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      `;
-    });
-
-    // Add tooltips
-    document.querySelectorAll("[data-tooltip]").forEach((el) => {
-      el.addEventListener("mouseenter", function () {
-        const tooltip = document.createElement("div");
-        tooltip.className = "tooltip";
-        tooltip.textContent = this.getAttribute("data-tooltip");
-        document.body.appendChild(tooltip);
-
-        const rect = this.getBoundingClientRect();
-        tooltip.style.position = "absolute";
-        tooltip.style.left = `${
-          rect.left + rect.width / 2 - tooltip.offsetWidth / 2
-        }px`;
-        tooltip.style.top = `${rect.top - tooltip.offsetHeight - 5}px`;
-        tooltip.style.opacity = "0";
-
-        setTimeout(() => {
-          tooltip.style.opacity = "1";
-          tooltip.style.transform = "translateY(-5px)";
-        }, 10);
-
-        this.addEventListener("mouseleave", function () {
-          tooltip.style.opacity = "0";
-          setTimeout(() => tooltip.remove(), 300);
-        });
-      });
-    });
+    initIcons();
+    initLoadingSpinner();
+    initCustomerSearch();
+    initFormValidation();
   });
 </script>
-
 {% endblock %}
