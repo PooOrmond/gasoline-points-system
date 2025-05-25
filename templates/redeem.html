@@ -18,6 +18,25 @@ block content %}
     --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
   }
 
+  .btn-logout {
+    background-color: #ef233c !important; /* Same red as error color */
+    color: white !important;
+  }
+
+  .btn-logout:hover {
+    background-color: #d91a33 !important; /* Slightly darker red on hover */
+  }
+
+  /* Mobile menu logout button */
+  .mobile-menu-actions .btn-logout {
+    background-color: #ef233c !important;
+    color: white !important;
+  }
+
+  .mobile-menu-actions .btn-logout:hover {
+    background-color: #d91a33 !important;
+  }
+
   .mobile-menu-footer .btn-logout {
     background-color: var(--error) !important;
     color: white !important;
@@ -343,6 +362,10 @@ block content %}
 
   /* Responsive Design */
   @media (max-width: 768px) {
+    .profile-section {
+      display: none !important;
+    }
+
     .form-row {
       flex-direction: column;
       gap: 10px;
@@ -357,9 +380,8 @@ block content %}
       display: block;
       overflow-x: auto;
     }
-  }
-  /* In transaction.html and redeem.html */
-  @media (max-width: 768px) {
+
+    /* In transaction.html and redeem.html */
     .form-grid {
       grid-template-columns: 1fr;
     }
@@ -373,6 +395,38 @@ block content %}
     .filter-chip {
       flex: 0 0 auto;
     }
+  }
+
+  /* Add sorting indicator styles */
+  .sortable-header {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px !important;
+  }
+
+  .sortable-header:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .sort-arrow {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    transition: all 0.2s ease;
+  }
+
+  .sort-arrow.active {
+    opacity: 1;
+  }
+
+  .sort-arrow.asc::after {
+    content: "↑";
+  }
+
+  .sort-arrow.desc::after {
+    content: "↓";
   }
 </style>
 
@@ -418,10 +472,46 @@ block content %}
   <table class="modern-table">
     <thead>
       <tr>
-        <th>DATE</th>
-        <th>CUSTOMER</th>
-        <th>REDEMPTION</th>
-        <th>POINTS</th>
+        <th
+          class="sortable-header"
+          data-sort="date"
+          data-order="{{ 'desc' if sort_by == 'date' and sort_order == 'asc' else 'asc' }}"
+        >
+          DATE
+          <span
+            class="sort-arrow {% if sort_by == 'date' %}active {{ sort_order }}{% endif %}"
+          ></span>
+        </th>
+        <th
+          class="sortable-header"
+          data-sort="customer"
+          data-order="{{ 'desc' if sort_by == 'customer' and sort_order == 'asc' else 'asc' }}"
+        >
+          CUSTOMER
+          <span
+            class="sort-arrow {% if sort_by == 'customer' %}active {{ sort_order }}{% endif %}"
+          ></span>
+        </th>
+        <th
+          class="sortable-header"
+          data-sort="amount"
+          data-order="{{ 'desc' if sort_by == 'amount' and sort_order == 'asc' else 'asc' }}"
+        >
+          REDEMPTION
+          <span
+            class="sort-arrow {% if sort_by == 'amount' %}active {{ sort_order }}{% endif %}"
+          ></span>
+        </th>
+        <th
+          class="sortable-header"
+          data-sort="points"
+          data-order="{{ 'desc' if sort_by == 'points' and sort_order == 'asc' else 'asc' }}"
+        >
+          POINTS
+          <span
+            class="sort-arrow {% if sort_by == 'points' %}active {{ sort_order }}{% endif %}"
+          ></span>
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -562,5 +652,22 @@ block content %}
   function formatNumber(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
+  // Add sorting functionality
+  document.querySelectorAll(".sortable-header").forEach((header) => {
+    header.addEventListener("click", function () {
+      const sortBy = this.dataset.sort;
+      const sortOrder = this.dataset.order;
+
+      // Get current URL and parameters
+      const url = new URL(window.location.href);
+
+      // Update sorting parameters
+      url.searchParams.set("sort_by", sortBy);
+      url.searchParams.set("sort_order", sortOrder);
+
+      // Reload the page with new sorting
+      window.location.href = url.toString();
+    });
+  });
 </script>
 {% endblock %}

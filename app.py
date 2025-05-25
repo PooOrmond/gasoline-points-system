@@ -385,19 +385,39 @@ def redeem():
         flash(f'Successfully redeemed {points_to_redeem:.2f} points for {peso_value:.2f}₱ fuel!', 'success')
         return redirect(url_for('redeem'))
     
-    c.execute("SELECT id, name, total_points FROM customers")
-    customers = c.fetchall()
+    # Get sorting parameters
+    sort_by = request.args.get('sort_by', 'date')
+    sort_order = request.args.get('sort_order', 'desc')
     
-    c.execute('''SELECT r.date, r.customer_id, r.reward_name, r.points_redeemed, c.name 
-                FROM redemptions r
-                JOIN customers c ON r.customer_id = c.id
-                ORDER BY r.date DESC''')
+    # Base query
+    query = """
+        SELECT r.date, r.customer_id, r.id, r.points_redeemed, c.name 
+        FROM redemptions r
+        JOIN customers c ON r.customer_id = c.id
+    """
+    
+    # Add sorting
+    valid_sort_columns = {
+        'date': 'r.date',
+        'customer': 'c.name',
+        'amount': 'r.points_redeemed',
+        'points': 'r.points_redeemed'
+    }
+    
+    if sort_by in valid_sort_columns:
+        order_column = valid_sort_columns[sort_by]
+        query += f" ORDER BY {order_column} {sort_order.upper()}"
+    else:
+        query += " ORDER BY r.date DESC"
+    
+    c.execute(query)
     redemptions = c.fetchall()
     
     conn.close()
     return render_template('redeem.html',
-                         customers=customers,
-                         redemptions=redemptions)
+                         redemptions=redemptions,
+                         sort_by=sort_by,
+                         sort_order=sort_order)
 
 @app.route('/reset-password', methods=['POST'])
 def reset_password():

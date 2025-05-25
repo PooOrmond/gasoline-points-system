@@ -467,6 +467,11 @@
           padding: 1rem;
         }
 
+        .profile-section,
+        .nav-tabs {
+          display: none;
+        }
+
         .mobile-menu-toggle {
           display: block;
           background: none;
@@ -474,7 +479,39 @@
           color: var(--primary);
           font-size: 1.5rem;
           cursor: pointer;
+          padding: 0.5rem;
+        }
+
+        .nav-tabs {
+          display: none;
+        }
+
+        .profile-section {
+          display: none;
+        }
+
+        .stats-container.dashboard-stats {
+          display: grid;
+        }
+
+        .mobile-menu-container {
+          display: none;
+          position: absolute;
+          top: 80px;
+          left: 1rem;
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 8px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
           padding: 1rem;
+          width: 200px;
+          z-index: 100;
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mobile-menu-container.active {
+          display: block;
+          animation: fadeInUp 0.3s ease-out;
         }
 
         .logo-title h1 {
@@ -483,10 +520,6 @@
 
         .logo {
           height: 30px;
-        }
-
-        .profile-section {
-          gap: 0.5rem;
         }
 
         #profile-btn,
@@ -515,13 +548,47 @@
           width: 100%;
         }
 
-        .nav-tabs {
-          flex-wrap: wrap;
+        .mobile-menu-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
         }
 
-        .nav-tab {
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
+        .mobile-menu-nav .nav-tab {
+          width: 100%;
+          text-align: left;
+          padding: 0.75rem;
+        }
+
+        .mobile-menu-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .mobile-menu-actions .btn {
+          width: 100%;
+          justify-content: flex-start;
+          padding: 0.75rem;
+        }
+
+        .profile-section {
+          gap: 0.5rem;
+        }
+      }
+
+      @media (min-width: 769px) {
+        /* Hide mobile-specific elements on desktop */
+        .mobile-menu-toggle,
+        .mobile-menu-container {
+          display: none !important;
+        }
+
+        /* Ensure desktop elements are visible */
+        .profile-section,
+        .nav-tabs {
+          display: flex !important;
         }
       }
     </style>
@@ -558,6 +625,9 @@
     <div class="dashboard-container">
       <div class="dashboard-header">
         <div class="header-left">
+          <button class="mobile-menu-toggle">
+            <i class="fas fa-bars"></i>
+          </button>
           <div class="logo-title">
             <img
               src="{{ url_for('static', filename='images/FRS_LOGO.png') }}"
@@ -575,6 +645,39 @@
           <button id="logout-btn" class="btn btn-logout">
             <i class="fas fa-sign-out-alt"></i>
             <span class="desktop-text">Logout</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mobile-menu-container" id="mobile-menu">
+        <div class="mobile-menu-nav">
+          <a
+            href="/dashboard"
+            class="nav-tab {% if request.path == '/dashboard' %}active{% endif %}"
+            >Dashboard</a
+          >
+          <a
+            href="/transactions"
+            class="nav-tab {% if request.path == '/transactions' %}active{% endif %}"
+            >Transactions</a
+          >
+          <a
+            href="/customers"
+            class="nav-tab {% if request.path == '/customers' %}active{% endif %}"
+            >Customers</a
+          >
+          <a
+            href="/redeem"
+            class="nav-tab {% if request.path == '/redeem' %}active{% endif %}"
+            >Redemptions</a
+          >
+        </div>
+        <div class="mobile-menu-actions">
+          <button id="mobile-profile-btn" class="btn btn-primary">
+            <i class="fas fa-user"></i> Profile
+          </button>
+          <button id="mobile-logout-btn" class="btn btn-logout">
+            <i class="fas fa-sign-out-alt"></i> Logout
           </button>
         </div>
       </div>
@@ -708,7 +811,70 @@
 
         // Initialize profile form
         initProfileForm();
+
+        initMobileStatsVisibility();
+
+        initMobileMenu();
       });
+
+      // ===== MOBILE MENU =====
+      function initMobileMenu() {
+        const menuToggle = document.querySelector(".mobile-menu-toggle");
+        const mobileMenu = document.getElementById("mobile-menu");
+        const mobileProfileBtn = document.getElementById("mobile-profile-btn");
+        const mobileLogoutBtn = document.getElementById("mobile-logout-btn");
+        const profileBtn = document.getElementById("profile-btn");
+        const logoutBtn = document.getElementById("logout-btn");
+
+        function toggleMobileMenu() {
+          mobileMenu.classList.toggle("active");
+        }
+
+        // Toggle menu when button clicked
+        menuToggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          toggleMobileMenu();
+        });
+
+        // Close menu when clicking outside
+        // Close menu when clicking outside
+        document.addEventListener("click", function (e) {
+          if (!mobileMenu.contains(e.target) && e.target !== menuToggle) {
+            mobileMenu.classList.remove("active");
+          }
+        });
+
+        // Forward mobile button clicks to desktop buttons
+        mobileProfileBtn.addEventListener("click", function () {
+          profileBtn.click();
+          mobileMenu.classList.remove("active");
+        });
+
+        mobileLogoutBtn.addEventListener("click", function () {
+          logoutBtn.click();
+          mobileMenu.classList.remove("active");
+        });
+
+        // Show stats only on dashboard for mobile
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const isDashboard = window.location.pathname === "/dashboard";
+
+        if (isMobile && isDashboard) {
+          document
+            .querySelector(".stats-container")
+            .classList.add("dashboard-stats");
+        }
+      }
+
+      function initMobileStatsVisibility() {
+        const statsContainer = document.querySelector(".stats-container");
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const isDashboard = window.location.pathname === "/dashboard";
+
+        if (isMobile && isDashboard) {
+          statsContainer.classList.add("dashboard-stats");
+        }
+      }
 
       // ===== BUBBLES =====
       function initBubbles() {
